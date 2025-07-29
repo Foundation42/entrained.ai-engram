@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: entrained-ai-engram-redis
+    ports:
+      - "6379:6379"
+      - "8002:8001"  # RedisInsight
+    environment:
+      - REDIS_ARGS=--save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - engram-network
+
+  engram:
+    build: .
+    container_name: entrained-ai-engram-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENGRAM_REDIS_HOST=redis
+      - ENGRAM_REDIS_PORT=6379
+      - ENGRAM_OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - ENGRAM_DEBUG=true
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - engram-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  redis_data:
+
+networks:
+  engram-network:
+    driver: bridge
+    name: entrained-ai-engram-network

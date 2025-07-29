@@ -1,0 +1,28 @@
+# Core dependencies
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+python-dotenv==1.0.1
+
+# Redis and vector search
+redis==5.0.1
+redis[hiredis]==5.0.1
+
+# Embeddings (for testing with local ollama)
+httpx==0.26.0
+numpy==1.26.4
+
+# API documentation
+python-multipart==0.0.9
+
+# Development and testing
+pytest==8.0.1
+pytest-asyncio==0.23.5
+pytest-mock==3.12.0
+
+# Monitoring and logging
+python-json-logger==2.0.7
+
+# Utilities
+uuid6==2024.1.12
