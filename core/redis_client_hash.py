@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Optional, Dict, Any, List
+import redis
 from redis import Redis
 import numpy as np
 import time
@@ -265,18 +266,37 @@ class RedisHashClient:
             # Convert query vector to binary
             query_buffer = np.array(query_vector, dtype=np.float32).tobytes()
             
-            # Execute search
-            results = self.client.execute_command(
-                'FT.SEARCH',
-                settings.vector_index_name,
-                knn_query,
-                'PARAMS', '2',
-                'query_vector', query_buffer,
-                'SORTBY', 'vector_score', 'ASC',
-                'RETURN', '7',
-                'id', 'content', 'agent_id', 'tags', 'metadata_json', 'vector_score', 'confidence',
-                'DIALECT', '2'
-            )
+            # Execute search (with index creation retry)
+            try:
+                results = self.client.execute_command(
+                    'FT.SEARCH',
+                    settings.vector_index_name,
+                    knn_query,
+                    'PARAMS', '2',
+                    'query_vector', query_buffer,
+                    'SORTBY', 'vector_score', 'ASC',
+                    'RETURN', '7',
+                    'id', 'content', 'agent_id', 'tags', 'metadata_json', 'vector_score', 'confidence',
+                    'DIALECT', '2'
+                )
+            except redis.exceptions.ResponseError as e:
+                if "No such index" in str(e):
+                    logger.warning(f"Vector index {settings.vector_index_name} not found, creating it...")
+                    self.ensure_vector_index()
+                    # Retry the search after creating index
+                    results = self.client.execute_command(
+                        'FT.SEARCH',
+                        settings.vector_index_name,
+                        knn_query,
+                        'PARAMS', '2',
+                        'query_vector', query_buffer,
+                        'SORTBY', 'vector_score', 'ASC',
+                        'RETURN', '7',
+                        'id', 'content', 'agent_id', 'tags', 'metadata_json', 'vector_score', 'confidence',
+                        'DIALECT', '2'
+                    )
+                else:
+                    raise
             
             # Parse results
             total_results = results[0]
