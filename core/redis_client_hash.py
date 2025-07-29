@@ -110,19 +110,44 @@ class RedisHashClient:
                 logger.error(f"Vector dimension mismatch: expected {settings.vector_dimensions}, got {len(vector)}")
                 return False
             
-            # Prepare hash fields
-            hash_data = {
-                'id': memory_id,
-                'agent_id': agent_id,
-                'content': memory_data['content']['text'],
-                'memory_type': memory_data['metadata']['memory_type'],
-                'domain': memory_data['metadata'].get('domain', ''),
-                'timestamp': str(int(datetime.fromisoformat(memory_data['metadata']['timestamp'].rstrip('Z')).timestamp() * 1000)),
-                'confidence': str(memory_data['metadata'].get('confidence', 1.0)),
-                'tags': ','.join(memory_data.get('tags', [])),
-                'metadata_json': json.dumps(memory_data['metadata']),
-                'content_json': json.dumps(memory_data['content'])
-            }
+            # Prepare hash fields with robust serialization
+            hash_data = {}
+            
+            # Safely extract and convert values
+            hash_data['id'] = str(memory_id)
+            hash_data['agent_id'] = str(agent_id)
+            
+            # Handle content
+            content_text = memory_data.get('content', {}).get('text', '')
+            hash_data['content'] = str(content_text) if content_text is not None else ''
+            
+            # Handle metadata fields
+            metadata = memory_data.get('metadata', {})
+            hash_data['memory_type'] = str(metadata.get('memory_type', 'general'))
+            hash_data['domain'] = str(metadata.get('domain', ''))
+            
+            # Handle timestamp
+            timestamp_str = metadata.get('timestamp', datetime.utcnow().isoformat() + 'Z')
+            try:
+                timestamp_ms = int(datetime.fromisoformat(timestamp_str.rstrip('Z')).timestamp() * 1000)
+                hash_data['timestamp'] = str(timestamp_ms)
+            except:
+                hash_data['timestamp'] = str(int(datetime.utcnow().timestamp() * 1000))
+            
+            # Handle confidence
+            confidence = metadata.get('confidence', 1.0)
+            hash_data['confidence'] = str(float(confidence) if confidence is not None else 1.0)
+            
+            # Handle tags
+            tags = memory_data.get('tags', [])
+            if tags and isinstance(tags, list):
+                hash_data['tags'] = ','.join(str(tag) for tag in tags if tag is not None)
+            else:
+                hash_data['tags'] = ''
+            
+            # Store full data as JSON (with safe serialization)
+            hash_data['metadata_json'] = json.dumps(metadata, default=str)
+            hash_data['content_json'] = json.dumps(memory_data.get('content', {}), default=str)
             
             # Store hash fields
             self.client.hset(key, mapping=hash_data)
@@ -147,9 +172,12 @@ class RedisHashClient:
     def _store_causality_relations(self, memory_id: str, causality: Dict[str, Any]):
         """Store causality relationships"""
         try:
-            for parent_id in causality.get("parent_memories", []):
-                self.client.sadd(f"causality:{memory_id}:parents", parent_id)
-                self.client.sadd(f"causality:{parent_id}:children", memory_id)
+            parent_memories = causality.get("parent_memories", [])
+            if parent_memories and isinstance(parent_memories, list):
+                for parent_id in parent_memories:
+                    if parent_id:  # Skip None or empty values
+                        self.client.sadd(f"causality:{memory_id}:parents", str(parent_id))
+                        self.client.sadd(f"causality:{parent_id}:children", str(memory_id))
         except Exception as e:
             logger.error(f"Failed to store causality relations for {memory_id}: {e}")
     
