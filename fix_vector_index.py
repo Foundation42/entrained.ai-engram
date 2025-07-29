@@ -22,7 +22,16 @@ def fix_vector_index():
         try:
             info = client.client.execute_command('FT.INFO', settings.vector_index_name)
             print(f"✅ Vector index already exists!")
-            print(f"   Documents indexed: {info[info.index('num_docs') + 1]}")
+            # Parse info more safely
+            info_dict = {}
+            for i in range(0, len(info), 2):
+                if i + 1 < len(info):
+                    info_dict[info[i].decode() if isinstance(info[i], bytes) else info[i]] = info[i + 1]
+            
+            if 'num_docs' in info_dict:
+                print(f"   Documents indexed: {info_dict['num_docs']}")
+            else:
+                print(f"   Index is active")
             return
         except redis.exceptions.ResponseError as e:
             if "Unknown Index name" in str(e) or "No such index" in str(e):
