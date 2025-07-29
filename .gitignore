@@ -101,9 +101,9 @@ embedding_output.json
 *.tmp
 *.temp
 debug_*.py
-test_*.py
-*_test.py
 check_*.py
+# Keep organized test files in tests/ directory
+!/tests/*.py
 
 # Project specific
 referencecode/

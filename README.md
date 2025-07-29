@@ -60,7 +60,7 @@ async def store_memory():
             "content": {
                 "text": "Important insight about neural networks..."
             },
-            "primary_vector": [0.1, 0.2, ...],  # 1536-dim vector from embedding
+            "primary_vector": [0.1, 0.2, ...],  # 768-dim vector from embedding
             "metadata": {
                 "timestamp": "2025-07-29T14:30:00Z",
                 "agent_id": "claude-001",
@@ -122,24 +122,26 @@ docker-compose up -d
 
 # Run test suite
 python tests/test_example.py
+python tests/comprehensive_test.py
+python tests/advanced_test_suite.py
 ```
 
 ## Architecture
 
 - **FastAPI**: Modern web framework for building APIs
-- **Redis Stack**: Data storage with vector similarity search
+- **Redis Stack**: Data storage with vector similarity search using HASH storage for optimal performance
 - **Docker**: Containerized deployment
-- **Ollama**: Local embedding generation
+- **Ollama**: Local embedding generation (nomic-embed-text model with 768 dimensions)
 
 ## API Endpoints
 
 - `POST /cam/store` - Store a new memory
 - `POST /cam/retrieve` - Retrieve memories by similarity
 - `GET /cam/memory/{memory_id}` - Get memory details
-- `POST /cam/memory/{memory_id}/annotate` - Add annotation
-- `GET /cam/memory/{memory_id}/annotations` - Get annotations
-- `GET /health` - Health check
-- `GET /` - API info
+- `POST /cam/memory/{memory_id}/annotate` - Add annotation to existing memory
+- `GET /cam/memory/{memory_id}/annotations` - Get all annotations for a memory
+- `GET /health` - Health check with Redis and vector index status
+- `GET /` - API info and version
 
 ## Configuration
 
@@ -147,7 +149,7 @@ Environment variables (prefix with `ENGRAM_`):
 
 - `REDIS_HOST` - Redis host (default: localhost)
 - `REDIS_PORT` - Redis port (default: 6379)
-- `VECTOR_DIMENSIONS` - Embedding dimensions (default: 1536)
+- `VECTOR_DIMENSIONS` - Embedding dimensions (default: 768)
 - `OLLAMA_BASE_URL` - Ollama API URL (default: http://localhost:11434)
 - `DEBUG` - Enable debug mode (default: false)
 
