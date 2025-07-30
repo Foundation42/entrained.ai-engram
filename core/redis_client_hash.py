@@ -72,12 +72,16 @@ class RedisHashClient:
                 'PREFIX', '1', 'memory:',  # Key prefix pattern
                 'SCHEMA',
                 'agent_id', 'TAG', 'SEPARATOR', ',',
+                'session_id', 'TAG', 'SEPARATOR', ',',  # Session isolation
                 'memory_type', 'TAG', 'SEPARATOR', ',',
                 'domain', 'TAG', 'SEPARATOR', ',',
                 'tags', 'TAG', 'SEPARATOR', ',',
+                'participants', 'TAG', 'SEPARATOR', ',',  # Participants filter
+                'thread_id', 'TAG', 'SEPARATOR', ',',  # Thread filter
                 'content', 'TEXT',
                 'timestamp', 'NUMERIC', 'SORTABLE',
                 'confidence', 'NUMERIC', 'SORTABLE',
+                'metadata_json', 'TEXT',  # For custom metadata searching
                 'embedding', 'VECTOR', settings.vector_algorithm, '6',
                 'TYPE', 'FLOAT32',
                 'DIM', str(settings.vector_dimensions),
@@ -126,6 +130,15 @@ class RedisHashClient:
             metadata = memory_data.get('metadata', {})
             hash_data['memory_type'] = str(metadata.get('memory_type', 'general'))
             hash_data['domain'] = str(metadata.get('domain', ''))
+            hash_data['session_id'] = str(metadata.get('session_id', ''))
+            hash_data['thread_id'] = str(metadata.get('thread_id', ''))
+            
+            # Handle participants
+            participants = metadata.get('participants', [])
+            if participants and isinstance(participants, list):
+                hash_data['participants'] = ','.join(str(p) for p in participants if p is not None)
+            else:
+                hash_data['participants'] = ''
             
             # Handle timestamp
             timestamp_str = metadata.get('timestamp', datetime.utcnow().isoformat() + 'Z')
@@ -253,6 +266,39 @@ class RedisHashClient:
             if filters and filters.get("domains"):
                 domain_filter = "|".join(filters["domains"])
                 filter_parts.append(f"@domain:{{{domain_filter}}}")
+            
+            # Session filter (for isolation)
+            if filters and filters.get("session_ids"):
+                session_filter = "|".join([f"{sid}" for sid in filters["session_ids"]])
+                filter_parts.append(f"@session_id:{{{session_filter}}}")
+            
+            # Thread filter
+            if filters and filters.get("thread_ids"):
+                thread_filter = "|".join([f"{tid}" for tid in filters["thread_ids"]])
+                filter_parts.append(f"@thread_id:{{{thread_filter}}}")
+            
+            # Participants filter
+            if filters and filters.get("participants"):
+                participant_filter = "|".join(filters["participants"])
+                filter_parts.append(f"@participants:{{{participant_filter}}}")
+            
+            # Memory type filter
+            if filters and filters.get("memory_types"):
+                type_filter = "|".join(filters["memory_types"])
+                filter_parts.append(f"@memory_type:{{{type_filter}}}")
+            
+            # Timestamp range filter
+            if filters and filters.get("timestamp_range"):
+                ts_range = filters["timestamp_range"]
+                if ts_range.get("after") or ts_range.get("before"):
+                    after_ms = int(ts_range["after"].timestamp() * 1000) if ts_range.get("after") else "-inf"
+                    before_ms = int(ts_range["before"].timestamp() * 1000) if ts_range.get("before") else "+inf"
+                    filter_parts.append(f"@timestamp:[{after_ms} {before_ms}]")
+            
+            # Confidence threshold
+            if filters and filters.get("confidence_threshold") is not None:
+                conf_threshold = filters["confidence_threshold"]
+                filter_parts.append(f"@confidence:[{conf_threshold} +inf]")
             
             # Build base query
             if filter_parts:

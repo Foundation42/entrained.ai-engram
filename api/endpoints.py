@@ -85,6 +85,21 @@ async def retrieve_memories(request: RetrievalRequest):
                 filters["agent_ids"] = request.filters.agent_ids
             if request.filters.memory_types:
                 filters["memory_types"] = request.filters.memory_types
+            if request.filters.session_ids:
+                filters["session_ids"] = request.filters.session_ids
+            if request.filters.domains:
+                filters["domains"] = request.filters.domains
+            if request.filters.thread_ids:
+                filters["thread_ids"] = request.filters.thread_ids
+            if request.filters.participants:
+                filters["participants"] = request.filters.participants
+            if request.filters.confidence_threshold is not None:
+                filters["confidence_threshold"] = request.filters.confidence_threshold
+            if request.filters.timestamp_range:
+                filters["timestamp_range"] = {
+                    "after": request.filters.timestamp_range.after,
+                    "before": request.filters.timestamp_range.before
+                }
         
         # Prepare tags
         include_tags = request.tags.include if request.tags else []

@@ -24,8 +24,13 @@ class RetrievalFilters(BaseModel):
     timestamp_range: Optional[TimestampRange] = None
     memory_types: Optional[List[str]] = None
     agent_ids: Optional[List[str]] = None
+    session_ids: Optional[List[str]] = None  # Filter by session
     confidence_threshold: Optional[float] = None
     domains: Optional[List[str]] = None
+    participants: Optional[List[str]] = None  # Filter by participants
+    thread_ids: Optional[List[str]] = None  # Filter by thread
+    # Generic metadata filters - key-value pairs
+    metadata_filters: Optional[Dict[str, Any]] = None
 
 
 class RetrievalConfig(BaseModel):

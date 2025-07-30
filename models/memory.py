@@ -26,10 +26,13 @@ class MemoryMetadata(BaseModel):
     timestamp: datetime
     agent_id: str
     memory_type: str
+    session_id: Optional[str] = None  # For session isolation
     participants: Optional[List[str]] = None
     thread_id: Optional[str] = None
     domain: Optional[str] = None
     confidence: Optional[float] = None
+    # Additional metadata fields that can be filtered
+    custom_metadata: Optional[Dict[str, Any]] = None
 
 
 class CausalityInfo(BaseModel):

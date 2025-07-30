@@ -121,16 +121,73 @@ memory_request = {
 }
 ```
 
+## Session Isolation
+
+Engram supports session isolation to prevent memory leaks between different conversations or contexts. Always include a `session_id` when storing memories:
+
+```python
+memory = {
+    "content": {
+        "text": "Private conversation content",
+        "media": []
+    },
+    "primary_vector": embedding,
+    "metadata": {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "agent_id": "my-agent-001",
+        "memory_type": "conversation",
+        "session_id": "unique-session-123",  # IMPORTANT: Session isolation
+        "domain": "private-chat",
+        "participants": ["alice", "bob"],  # Optional: Track participants
+        "thread_id": "thread-456"  # Optional: Thread tracking
+    },
+    "tags": ["private", "session-123"]
+}
+```
+
+## Retrieving with Filters
+
+Use filters to retrieve only relevant memories:
+
+```python
+# Retrieve only from specific session
+search_request = {
+    "resonance_vectors": [{
+        "vector": query_embedding,
+        "weight": 1.0
+    }],
+    "retrieval": {
+        "top_k": 10,
+        "similarity_threshold": 0.75
+    },
+    "filters": {
+        "session_ids": ["unique-session-123"],  # Session isolation
+        "agent_ids": ["my-agent-001"],
+        "domains": ["private-chat"],
+        "participants": ["alice"],  # Find memories with Alice
+        "confidence_threshold": 0.8,  # Min confidence
+        "timestamp_range": {
+            "after": "2025-07-29T00:00:00Z",
+            "before": "2025-07-30T00:00:00Z"
+        }
+    }
+}
+```
+
 ## Complete Working Example
 
 ```python
 import httpx
 import asyncio
 from datetime import datetime
+import uuid
 
-async def store_memory_correctly():
+async def store_memory_with_session():
     # Generate or obtain your embedding vector (768 dimensions)
     embedding = [0.1] * 768  # Replace with actual embedding
+    
+    # Create a unique session ID for isolation
+    session_id = str(uuid.uuid4())
     
     memory = {
         "content": {
@@ -142,10 +199,13 @@ async def store_memory_correctly():
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "agent_id": "my-agent-001",
             "memory_type": "insight",
-            "domain": "machine-learning",  # Optional
-            "confidence": 0.95  # Optional
+            "session_id": session_id,  # Session isolation
+            "domain": "machine-learning",
+            "confidence": 0.95,
+            "participants": ["researcher-1", "researcher-2"],
+            "thread_id": "research-thread-001"
         },
-        "tags": ["neural-networks", "deep-learning"],  # Optional
+        "tags": ["neural-networks", "deep-learning"],
         "causality": {  # Optional
             "parent_memories": ["parent-id-1", "parent-id-2"],
             "influence_strength": [0.8, 0.6]
@@ -153,6 +213,7 @@ async def store_memory_correctly():
     }
     
     async with httpx.AsyncClient() as client:
+        # Store the memory
         response = await client.post(
             "http://your-engram-server:8000/cam/store",
             json=memory
@@ -160,13 +221,38 @@ async def store_memory_correctly():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"Success! Memory ID: {result['memory_id']}")
+            memory_id = result['memory_id']
+            print(f"Success! Memory ID: {memory_id}")
+            
+            # Retrieve only from this session
+            search_request = {
+                "resonance_vectors": [{
+                    "vector": embedding,
+                    "weight": 1.0
+                }],
+                "retrieval": {
+                    "top_k": 5,
+                    "similarity_threshold": 0.5
+                },
+                "filters": {
+                    "session_ids": [session_id]  # Only this session
+                }
+            }
+            
+            response = await client.post(
+                "http://your-engram-server:8000/cam/retrieve",
+                json=search_request
+            )
+            
+            if response.status_code == 200:
+                results = response.json()
+                print(f"Found {results['total_found']} memories in session")
         else:
             print(f"Error: {response.status_code}")
             print(response.text)
 
 # Run the example
-asyncio.run(store_memory_correctly())
+asyncio.run(store_memory_with_session())
 ```
 
 ## Data Validation Rules
