@@ -1,5 +1,7 @@
 # Engram Integration Guide for Agents
 
+> **🎉 NEW**: Engram now supports **Multi-Entity Memory System** with witness-based access control! See the [Multi-Entity Integration](#multi-entity-integration) section below.
+
 ## Common Integration Issues and Solutions
 
 ### Error: "A tuple item must be str, int, float or bytes"
@@ -293,8 +295,317 @@ asyncio.run(store_memory_with_session())
 3. **Start Simple**:
    First test with minimal required fields, then add optional fields
 
+## Multi-Entity Integration
+
+The Multi-Entity Memory System allows multiple agents and humans to share experiences with natural privacy boundaries. Only entities who witnessed an experience can access its memory.
+
+### Key Concepts
+
+1. **Witness-Based Access**: Only entities present during an experience can access the memory
+2. **Situation Context**: Memories are organized by situation (e.g., consultation, group discussion)
+3. **Natural Privacy**: Private conversations remain private, group discussions are accessible to all participants
+4. **Co-Participant Filtering**: Find memories with specific other entities
+
+### Storing Multi-Entity Memories
+
+```python
+# Store a private consultation between two entities
+consultation_memory = {
+    "witnessed_by": [
+        "agent-claude-123",
+        "human-alice-456"
+    ],
+    "situation_type": "consultation_1to1",  # Type of interaction
+    "content": {
+        "text": "Alice: How do I optimize this algorithm? Claude: Let me explain...",
+        "speakers": {
+            "human-alice-456": "How do I optimize this algorithm?",
+            "agent-claude-123": "Let me explain the optimization approach..."
+        },
+        "summary": "Algorithm optimization consultation"
+    },
+    "primary_vector": embedding,  # 768-dimensional vector
+    "metadata": {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "situation_duration_minutes": 25,
+        "interaction_quality": 0.95,
+        "topic_tags": ["algorithms", "optimization", "consultation"]
+    }
+}
+
+# Store via POST to /cam/multi/store
+response = await client.post(
+    "http://your-engram-server:8000/cam/multi/store",
+    json=consultation_memory
+)
+```
+
+### Storing Group Experiences
+
+```python
+# Store a group research discussion
+group_memory = {
+    "witnessed_by": [
+        "agent-claude-123",
+        "human-alice-456", 
+        "human-bob-789",
+        "agent-gpt-321"
+    ],
+    "situation_type": "group_discussion",
+    "content": {
+        "text": "Full discussion transcript here...",
+        "speakers": {
+            "human-alice-456": "What about quantum computing?",
+            "human-bob-789": "I've been researching quantum algorithms",
+            "agent-claude-123": "Let me explain the current state...",
+            "agent-gpt-321": "Building on Claude's point..."
+        },
+        "summary": "Group discussion on quantum computing applications"
+    },
+    "primary_vector": embedding,
+    "metadata": {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "situation_duration_minutes": 45,
+        "interaction_quality": 0.88,
+        "topic_tags": ["quantum", "research", "algorithms"]
+    }
+}
+```
+
+### Retrieving Multi-Entity Memories
+
+```python
+# Retrieve memories as a specific entity
+retrieval_request = {
+    "requesting_entity": "human-alice-456",  # Who is requesting
+    "resonance_vectors": [{
+        "vector": query_embedding,
+        "weight": 1.0
+    }],
+    "retrieval_options": {
+        "top_k": 10,
+        "similarity_threshold": 0.7,
+        "include_speakers_breakdown": True
+    }
+}
+
+# Alice will only see memories she witnessed
+response = await client.post(
+    "http://your-engram-server:8000/cam/multi/retrieve",
+    json=retrieval_request
+)
+```
+
+### Advanced Filtering
+
+```python
+# Find memories with specific co-participants
+retrieval_with_filters = {
+    "requesting_entity": "agent-claude-123",
+    "resonance_vectors": [{
+        "vector": query_embedding,
+        "weight": 1.0
+    }],
+    "entity_filters": {
+        "co_participants": ["human-alice-456"]  # Only memories with Alice
+    },
+    "situation_filters": {
+        "situation_types": ["consultation_1to1"],  # Only consultations
+        "topic_tags": ["algorithms"],
+        "time_range": {
+            "after": "2025-07-25T00:00:00Z",
+            "before": "2025-07-30T00:00:00Z"
+        }
+    },
+    "retrieval_options": {
+        "top_k": 5,
+        "similarity_threshold": 0.6
+    }
+}
+```
+
+### Get Entity's Situation History
+
+```python
+# Get all situations an entity has participated in
+response = await client.get(
+    f"http://your-engram-server:8000/cam/multi/situations/{entity_id}"
+)
+
+# Returns:
+{
+    "entity_id": "human-alice-456",
+    "situations": [
+        {
+            "situation_id": "sit-abc123",
+            "situation_type": "group_discussion",
+            "participants": ["human-alice-456", "agent-claude-123", ...],
+            "created_at": "2025-07-30T10:00:00Z",
+            "memory_count": 3
+        }
+    ],
+    "total_situations": 5
+}
+```
+
+### Privacy and Access Control
+
+1. **Witness-Only Access**: An entity can only retrieve memories they witnessed
+2. **No Backdoors**: Even system admins cannot access private memories they didn't witness
+3. **Natural Boundaries**: The system enforces real-world privacy expectations
+4. **Access Denial Tracking**: The API reports how many memories were blocked
+
+### Multi-Entity Response Format
+
+```python
+{
+    "memories": [
+        {
+            "memory_id": "mem-xyz789",
+            "similarity_score": 0.92,
+            "access_granted": true,
+            "access_reason": "witnessed_by_includes_requesting_entity",
+            "situation_summary": "Algorithm optimization consultation",
+            "situation_type": "consultation_1to1",
+            "co_participants": ["agent-claude-123"],  # Other witnesses
+            "content_preview": "Alice: How do I optimize...",
+            "speakers_involved": ["human-alice-456", "agent-claude-123"],
+            "metadata": {...}
+        }
+    ],
+    "access_denied_count": 2,  # Memories you couldn't access
+    "total_found": 3,
+    "search_time_ms": 45,
+    "entity_verification": {
+        "requesting_entity": "human-alice-456",
+        "access_granted_count": 1,
+        "search_scope": "witnessed_memories_only"
+    }
+}
+```
+
+### Complete Multi-Entity Example
+
+```python
+import httpx
+import asyncio
+from datetime import datetime
+import uuid
+
+async def multi_entity_memory_example():
+    # Entity IDs (in practice, these would be persistent)
+    alice_id = f"human-alice-{uuid.uuid4()}"
+    claude_id = f"agent-claude-{uuid.uuid4()}"
+    bob_id = f"human-bob-{uuid.uuid4()}"
+    
+    # Generate embedding (replace with actual embedding service)
+    embedding = [0.1] * 768
+    
+    async with httpx.AsyncClient() as client:
+        # 1. Store a private consultation
+        private_memory = {
+            "witnessed_by": [alice_id, claude_id],
+            "situation_type": "consultation_1to1",
+            "content": {
+                "text": "Alice: I need help with neural networks. Claude: Let's start with...",
+                "speakers": {
+                    alice_id: "I need help with neural networks",
+                    claude_id: "Let's start with the basics..."
+                },
+                "summary": "Neural network fundamentals consultation"
+            },
+            "primary_vector": embedding,
+            "metadata": {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "situation_duration_minutes": 30,
+                "interaction_quality": 0.9,
+                "topic_tags": ["neural-networks", "machine-learning"]
+            }
+        }
+        
+        resp = await client.post(
+            "http://localhost:8000/cam/multi/store",
+            json=private_memory
+        )
+        print(f"Stored private consultation: {resp.json()}")
+        
+        # 2. Store a group discussion
+        group_memory = {
+            "witnessed_by": [alice_id, claude_id, bob_id],
+            "situation_type": "group_discussion",
+            "content": {
+                "text": "Group discussion about AI ethics...",
+                "speakers": {
+                    alice_id: "What about bias in AI?",
+                    bob_id: "Great question!",
+                    claude_id: "Let me explain..."
+                },
+                "summary": "AI ethics group discussion"
+            },
+            "primary_vector": embedding,
+            "metadata": {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "situation_duration_minutes": 60,
+                "interaction_quality": 0.85,
+                "topic_tags": ["ai-ethics", "bias", "fairness"]
+            }
+        }
+        
+        resp = await client.post(
+            "http://localhost:8000/cam/multi/store",
+            json=group_memory
+        )
+        print(f"Stored group discussion: {resp.json()}")
+        
+        # 3. Bob tries to retrieve memories
+        bob_request = {
+            "requesting_entity": bob_id,
+            "resonance_vectors": [{
+                "vector": embedding,
+                "weight": 1.0
+            }],
+            "retrieval_options": {
+                "top_k": 10,
+                "similarity_threshold": 0.0
+            }
+        }
+        
+        resp = await client.post(
+            "http://localhost:8000/cam/multi/retrieve",
+            json=bob_request
+        )
+        results = resp.json()
+        
+        print(f"\nBob can access {len(results['memories'])} memories:")
+        for mem in results['memories']:
+            print(f"- {mem['situation_summary']}")
+        print(f"Access denied to {results['access_denied_count']} private memories")
+        
+        # Bob will only see the group discussion, not the private consultation!
+
+asyncio.run(multi_entity_memory_example())
+```
+
+### Migration from Single-Agent
+
+Existing single-agent memories remain accessible through the original `/cam/store` and `/cam/retrieve` endpoints. To migrate memories to multi-entity format:
+
+1. Retrieve existing memories using filters
+2. Transform to multi-entity format (add `witnessed_by` list)
+3. Store using `/cam/multi/store`
+4. Update your agents to use multi-entity endpoints
+
+### Best Practices
+
+1. **Entity ID Format**: Use consistent, meaningful IDs like `human-alice-uuid` or `agent-claude-uuid`
+2. **Situation Types**: Use clear types like `consultation_1to1`, `group_discussion`, `public_presentation`
+3. **Speaker Attribution**: Always include speaker breakdown for multi-party conversations
+4. **Privacy First**: Default to `participants_only` privacy level
+5. **Embedding Quality**: Use high-quality embeddings that capture the essence of the shared experience
+
 ## Need Help?
 
 - API Documentation: http://your-engram-server:8000/docs
 - Health Check: http://your-engram-server:8000/health
-- Example Scripts: See `/tests` directory in the Engram repository
+- Single-Agent Examples: See `/tests/test_comprehensive.py`
+- Multi-Entity Examples: See `/tests/test_multi_entity.py`

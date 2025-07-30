@@ -5,11 +5,13 @@ A Redis-based semantic memory system for AI agents, enabling storage, retrieval,
 ## Features
 
 - **Vector Similarity Search**: Store and retrieve memories based on semantic similarity
+- **Multi-Entity Memory System** 🎉: Revolutionary witness-based access control for shared experiences
+- **Natural Privacy Boundaries**: Private conversations stay private, group discussions are accessible to participants
 - **Multimedia Support**: Handle text, images, websites, and documents
 - **Causality Tracking**: Track relationships between memories and idea evolution
 - **Annotation System**: Add context and relationships to existing memories
 - **High Performance**: Built on Redis with vector search capabilities
-- **RESTful API**: Clean, well-documented API endpoints
+- **RESTful API**: Clean, well-documented API endpoints for both single-agent and multi-entity operations
 
 ## Quick Start
 
@@ -135,13 +137,24 @@ python tests/advanced_test_suite.py
 
 ## API Endpoints
 
+### Single-Agent Memory Operations
 - `POST /cam/store` - Store a new memory
 - `POST /cam/retrieve` - Retrieve memories by similarity
 - `GET /cam/memory/{memory_id}` - Get memory details
 - `POST /cam/memory/{memory_id}/annotate` - Add annotation to existing memory
 - `GET /cam/memory/{memory_id}/annotations` - Get all annotations for a memory
+
+### Multi-Entity Memory Operations (NEW!)
+- `POST /cam/multi/store` - Store shared experience with witness list
+- `POST /cam/multi/retrieve` - Retrieve memories with entity-based access control
+- `GET /cam/multi/memory/{memory_id}` - Get memory with witness verification
+- `GET /cam/multi/situations/{entity_id}` - Get entity's situation history
+
+### System Endpoints
 - `GET /health` - Health check with Redis and vector index status
 - `GET /` - API info and version
+
+See [AGENT_INTEGRATION_GUIDE.md](AGENT_INTEGRATION_GUIDE.md) for detailed integration examples including the new multi-entity features.
 
 ## Configuration
 
