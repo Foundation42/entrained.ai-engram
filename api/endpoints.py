@@ -69,6 +69,22 @@ async def retrieve_memories(request: RetrievalRequest):
     try:
         start_time = datetime.utcnow()
         
+        # Debug logging
+        logger.info(f"Retrieval request received")
+        logger.info(f"Request type: {type(request)}")
+        logger.info(f"Request filters object: {request.filters}")
+        logger.info(f"Request filters type: {type(request.filters)}")
+        
+        if request.filters:
+            logger.info(f"Filters is truthy")
+            logger.info(f"Filter model dump: {request.filters.model_dump()}")
+            logger.info(f"Filter dict: {request.filters.__dict__ if hasattr(request.filters, '__dict__') else 'No __dict__'}")
+            
+            # Log each filter field
+            for field_name in ['agent_ids', 'session_ids', 'memory_types', 'domains']:
+                field_value = getattr(request.filters, field_name, 'ATTR_NOT_FOUND')
+                logger.info(f"  {field_name}: {field_value} (type: {type(field_value)})")
+        
         # Combine resonance vectors if multiple provided
         if len(request.resonance_vectors) == 1:
             query_vector = request.resonance_vectors[0].vector
@@ -81,28 +97,48 @@ async def retrieve_memories(request: RetrievalRequest):
         # Prepare filters
         filters = {}
         if request.filters:
-            if request.filters.agent_ids:
-                filters["agent_ids"] = request.filters.agent_ids
-            if request.filters.memory_types:
-                filters["memory_types"] = request.filters.memory_types
-            if request.filters.session_ids:
-                filters["session_ids"] = request.filters.session_ids
-            if request.filters.domains:
-                filters["domains"] = request.filters.domains
-            if request.filters.thread_ids:
-                filters["thread_ids"] = request.filters.thread_ids
-            if request.filters.participants:
-                filters["participants"] = request.filters.participants
-            if request.filters.confidence_threshold is not None:
-                filters["confidence_threshold"] = request.filters.confidence_threshold
-            if request.filters.timestamp_range:
+            # Use getattr with default None to handle all cases
+            agent_ids = getattr(request.filters, 'agent_ids', None)
+            if agent_ids is not None:
+                filters["agent_ids"] = agent_ids
+                
+            memory_types = getattr(request.filters, 'memory_types', None)
+            if memory_types is not None:
+                filters["memory_types"] = memory_types
+                
+            session_ids = getattr(request.filters, 'session_ids', None)
+            if session_ids is not None:
+                filters["session_ids"] = session_ids
+                
+            domains = getattr(request.filters, 'domains', None)
+            if domains is not None:
+                filters["domains"] = domains
+                
+            thread_ids = getattr(request.filters, 'thread_ids', None)
+            if thread_ids is not None:
+                filters["thread_ids"] = thread_ids
+                
+            participants = getattr(request.filters, 'participants', None)
+            if participants is not None:
+                filters["participants"] = participants
+                
+            confidence_threshold = getattr(request.filters, 'confidence_threshold', None)
+            if confidence_threshold is not None:
+                filters["confidence_threshold"] = confidence_threshold
+                
+            timestamp_range = getattr(request.filters, 'timestamp_range', None)
+            if timestamp_range is not None:
                 filters["timestamp_range"] = {
-                    "after": request.filters.timestamp_range.after,
-                    "before": request.filters.timestamp_range.before
+                    "after": timestamp_range.after if timestamp_range.after else None,
+                    "before": timestamp_range.before if timestamp_range.before else None
                 }
         
         # Prepare tags
         include_tags = request.tags.include if request.tags else []
+        
+        # Debug log filters before search
+        logger.info(f"Filters being passed to search: {filters}")
+        logger.info(f"Filter keys: {list(filters.keys()) if filters else 'None'}")
         
         # Search memories (always pass filters dict, even if empty)
         results = redis_client.search_memories(
