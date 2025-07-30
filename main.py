@@ -6,8 +6,10 @@ from fastapi.responses import JSONResponse
 
 from core.config import settings
 from core.redis_client_hash import redis_client
+from core.redis_client_multi_entity import redis_multi_entity_client
 from services.embedding import embedding_service
 from api.endpoints import router
+from api.multi_entity_endpoints import router as multi_entity_router
 
 # Configure logging
 logging.basicConfig(
@@ -25,12 +27,14 @@ async def lifespan(app: FastAPI):
     
     # Connect to Redis
     redis_client.connect()
+    redis_multi_entity_client.connect()
     
     yield
     
     # Shutdown
     logger.info("Shutting down Engram...")
     redis_client.close()
+    # Note: Add close method to multi-entity client if needed
     await embedding_service.close()
 
 
@@ -52,6 +56,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(router, prefix=settings.api_prefix)
+app.include_router(multi_entity_router, prefix="/cam")
 
 
 @app.get("/")
@@ -61,7 +66,8 @@ async def root():
         "name": settings.app_name,
         "version": settings.api_version,
         "status": "running",
-        "description": "Content Addressable Memory system for AI agents"
+        "description": "Content Addressable Memory system for AI agents",
+        "features": ["single-agent", "multi-entity", "witness-based-access"]
     }
 
 
