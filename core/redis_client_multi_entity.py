@@ -176,7 +176,12 @@ class RedisMultiEntityClient:
                 timestamp_ms = int(datetime.fromisoformat(timestamp_val.rstrip('Z')).timestamp() * 1000)
             hash_data['timestamp'] = str(timestamp_ms)
             hash_data['interaction_quality'] = str(metadata.get('interaction_quality', 1.0))
-            hash_data['duration_minutes'] = str(metadata.get('situation_duration_minutes', 0))
+            
+            # Handle duration_minutes - ensure it's a valid number, not None or string "None"
+            duration_val = metadata.get('situation_duration_minutes', 0)
+            if duration_val is None or duration_val == 'None':
+                duration_val = 0
+            hash_data['duration_minutes'] = str(duration_val)
             
             # Topic tags
             topic_tags = metadata.get('topic_tags', [])
