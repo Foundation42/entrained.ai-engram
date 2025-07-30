@@ -40,11 +40,19 @@ async def store_multi_entity_memory(request: MultiEntityMemoryCreateRequest):
                 detail="Memory must have at least one witness"
             )
         
-        # Create situation info
-        situation = SituationInfo(
-            situation_id=request.situation_id or f"sit-{datetime.utcnow().timestamp()}",
-            situation_type=request.situation_type
-        )
+        # Create situation info with validation
+        try:
+            situation = SituationInfo(
+                situation_id=request.situation_id or f"sit-{datetime.utcnow().timestamp()}",
+                situation_type=request.situation_type
+            )
+        except Exception as e:
+            logger.error(f"Error creating situation: {e}")
+            logger.error(f"Request situation_type: {request.situation_type}, type: {type(request.situation_type)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid situation data: {str(e)}"
+            )
         
         # Create access control
         privacy_level = 'participants_only'

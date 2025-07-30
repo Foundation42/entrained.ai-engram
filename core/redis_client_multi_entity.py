@@ -145,8 +145,16 @@ class RedisMultiEntityClient:
             
             # Situation info
             situation = memory_data.get('situation', {})
-            hash_data['situation_id'] = str(situation.get('situation_id', '')).replace('-', '')
-            hash_data['situation_type'] = str(situation.get('situation_type', 'unknown'))
+            logger.debug(f"Situation data type: {type(situation)}, content: {situation}")
+            
+            # Handle both dict and object access patterns
+            if isinstance(situation, dict):
+                hash_data['situation_id'] = str(situation.get('situation_id', '')).replace('-', '')
+                hash_data['situation_type'] = str(situation.get('situation_type', 'unknown'))
+            else:
+                # If it's an object, use attribute access
+                hash_data['situation_id'] = str(getattr(situation, 'situation_id', '')).replace('-', '')
+                hash_data['situation_type'] = str(getattr(situation, 'situation_type', 'unknown'))
             
             # Content
             content = memory_data.get('content', {})
