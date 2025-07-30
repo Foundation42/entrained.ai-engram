@@ -98,9 +98,9 @@ async def store_curated_memory(request: CuratedMemoryCreateRequest, background_t
         # Enhance memory metadata with curation info
         enhanced_metadata = request.metadata.copy() if request.metadata else {}
         enhanced_metadata.update({
-            "storage_type": decision.storage_type.value,
-            "retention_policy": decision.retention_policy.value,
-            "privacy_sensitivity": decision.privacy_sensitivity.value,
+            "storage_type": decision.storage_type.value if hasattr(decision.storage_type, 'value') else str(decision.storage_type),
+            "retention_policy": decision.retention_policy.value if hasattr(decision.retention_policy, 'value') else str(decision.retention_policy),
+            "privacy_sensitivity": decision.privacy_sensitivity.value if hasattr(decision.privacy_sensitivity, 'value') else str(decision.privacy_sensitivity),
             "confidence_score": decision.confidence_score,
             "tags": decision.tags,
             "key_information": decision.key_information,
@@ -130,8 +130,8 @@ async def store_curated_memory(request: CuratedMemoryCreateRequest, background_t
         # Add curation info to response
         result.update({
             "curation_decision": {
-                "storage_type": decision.storage_type.value,
-                "retention_policy": decision.retention_policy.value,
+                "storage_type": decision.storage_type.value if hasattr(decision.storage_type, 'value') else str(decision.storage_type),
+                "retention_policy": decision.retention_policy.value if hasattr(decision.retention_policy, 'value') else str(decision.retention_policy),
                 "confidence_score": decision.confidence_score,
                 "key_information": decision.key_information,
                 "reasoning": decision.reasoning
