@@ -282,19 +282,39 @@ class RedisMultiEntityClient:
             # Convert query vector to binary
             query_buffer = np.array(query_vector, dtype=np.float32).tobytes()
             
-            # Execute search
-            results = self.client.execute_command(
-                'FT.SEARCH',
-                self.index_name,
-                knn_query,
-                'PARAMS', '2',
-                'query_vector', query_buffer,
-                'SORTBY', 'vector_score', 'ASC',
-                'RETURN', '8',
-                'id', 'witnessed_by', 'situation_type', 'summary', 
-                'speakers_json', 'memory_json', 'vector_score', 'privacy_level',
-                'DIALECT', '2'
-            )
+            # Execute search (with index creation retry)
+            try:
+                results = self.client.execute_command(
+                    'FT.SEARCH',
+                    self.index_name,
+                    knn_query,
+                    'PARAMS', '2',
+                    'query_vector', query_buffer,
+                    'SORTBY', 'vector_score', 'ASC',
+                    'RETURN', '8',
+                    'id', 'witnessed_by', 'situation_type', 'summary', 
+                    'speakers_json', 'memory_json', 'vector_score', 'privacy_level',
+                    'DIALECT', '2'
+                )
+            except redis.exceptions.ResponseError as e:
+                if "No such index" in str(e):
+                    logger.warning(f"Multi-entity vector index {self.index_name} not found, creating it...")
+                    self._ensure_vector_index()
+                    # Retry the search after creating index
+                    results = self.client.execute_command(
+                        'FT.SEARCH',
+                        self.index_name,
+                        knn_query,
+                        'PARAMS', '2',
+                        'query_vector', query_buffer,
+                        'SORTBY', 'vector_score', 'ASC',
+                        'RETURN', '8',
+                        'id', 'witnessed_by', 'situation_type', 'summary', 
+                        'speakers_json', 'memory_json', 'vector_score', 'privacy_level',
+                        'DIALECT', '2'
+                    )
+                else:
+                    raise
             
             # Parse results
             memories = []
