@@ -170,6 +170,28 @@ async def retrieve_multi_entity_memories(request: MultiEntityRetrievalRequest):
         # Filter by similarity threshold
         filtered_results = [r for r in results if r['similarity_score'] >= similarity_threshold]
         
+        # Apply denial content filtering if requested
+        exclude_denials = request.retrieval_options.get('exclude_denials', True) if isinstance(request.retrieval_options, dict) else True
+        
+        if exclude_denials:
+            denial_phrases = [
+                "don't have access", "don't know", "sorry", "can't", "unable", 
+                "i don't have", "i'm sorry", "i cannot", "no access to personal data",
+                "don't remember", "can't remember", "no memory of", "not familiar with"
+            ]
+            
+            non_denial_results = []
+            for result in filtered_results:
+                content = result.get('content_preview', '').lower()
+                is_denial = any(phrase in content for phrase in denial_phrases)
+                
+                if not is_denial:
+                    non_denial_results.append(result)
+                else:
+                    logger.debug(f"Filtered out denial memory: {result.get('memory_id', 'unknown')}")
+            
+            filtered_results = non_denial_results
+        
         # Convert to response format
         memories = []
         access_denied_count = 0
