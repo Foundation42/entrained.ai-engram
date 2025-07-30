@@ -9,7 +9,8 @@ from core.redis_client_hash import redis_client
 from core.redis_client_multi_entity import redis_multi_entity_client
 from services.embedding import embedding_service
 from api.endpoints import router
-from api.multi_entity_endpoints import router as multi_entity_router
+from api.multi_entity_endpoints import router as multi_entity_router  
+from api.admin_endpoints import router as admin_router
 
 # Configure logging
 logging.basicConfig(
@@ -57,6 +58,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(router, prefix=settings.api_prefix)
 app.include_router(multi_entity_router, prefix="/cam")
+app.include_router(admin_router, prefix="/api/v1")
 
 
 @app.get("/")
