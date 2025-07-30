@@ -262,7 +262,9 @@ class RedisHashClient:
             
             # Agent filter
             if filters and filters.get("agent_ids"):
-                agent_filter = "|".join([f"{aid}" for aid in filters["agent_ids"]])
+                # Escape special characters
+                escaped_aids = [str(aid).replace("-", "\\-").replace(".", "\\.") for aid in filters["agent_ids"]]
+                agent_filter = "|".join(escaped_aids)
                 filter_parts.append(f"@agent_id:{{{agent_filter}}}")
             
             # Tag filter  
@@ -277,12 +279,20 @@ class RedisHashClient:
             
             # Session filter (for isolation)
             if filters and filters.get("session_ids"):
-                session_filter = "|".join([f"{sid}" for sid in filters["session_ids"]])
+                # Escape special characters in session IDs
+                escaped_sids = []
+                for sid in filters["session_ids"]:
+                    # Escape hyphens and other special chars for Redis search
+                    escaped_sid = str(sid).replace("-", "\\-").replace(".", "\\.")
+                    escaped_sids.append(escaped_sid)
+                session_filter = "|".join(escaped_sids)
                 filter_parts.append(f"@session_id:{{{session_filter}}}")
             
             # Thread filter
             if filters and filters.get("thread_ids"):
-                thread_filter = "|".join([f"{tid}" for tid in filters["thread_ids"]])
+                # Escape special characters
+                escaped_tids = [str(tid).replace("-", "\\-").replace(".", "\\.") for tid in filters["thread_ids"]]
+                thread_filter = "|".join(escaped_tids)
                 filter_parts.append(f"@thread_id:{{{thread_filter}}}")
             
             # Participants filter
@@ -292,7 +302,9 @@ class RedisHashClient:
             
             # Memory type filter
             if filters and filters.get("memory_types"):
-                type_filter = "|".join(filters["memory_types"])
+                # Memory types shouldn't have special chars, but escape anyway
+                escaped_types = [str(mt).replace("-", "\\-").replace(".", "\\.") for mt in filters["memory_types"]]
+                type_filter = "|".join(escaped_types)
                 filter_parts.append(f"@memory_type:{{{type_filter}}}")
             
             # Timestamp range filter

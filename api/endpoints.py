@@ -104,11 +104,11 @@ async def retrieve_memories(request: RetrievalRequest):
         # Prepare tags
         include_tags = request.tags.include if request.tags else []
         
-        # Search memories
+        # Search memories (always pass filters dict, even if empty)
         results = redis_client.search_memories(
             query_vector=query_vector,
             top_k=request.retrieval.top_k,
-            filters=filters if filters else None,
+            filters=filters,  # Pass empty dict instead of None
             tags=include_tags if include_tags else None
         )
         
