@@ -1,0 +1,10 @@
+{
+  "user_input": "My name is Christian and I live in Liversedge",
+  "agent_response": "Nice to meet you, Christian! I will remember that you live in Liversedge.",
+  "conversation_context": "Initial introduction",
+  "curation_preferences": {
+    "priority_topics": ["personal_info", "location"],
+    "retention_bias": "balanced",
+    "agent_personality": "helpful_assistant"
+  }
+}

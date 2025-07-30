@@ -11,6 +11,8 @@ from services.embedding import embedding_service
 from api.endpoints import router
 from api.multi_entity_endpoints import router as multi_entity_router  
 from api.admin_endpoints import router as admin_router
+from api.curated_memory_endpoints import router as curated_router
+from services.memory_cleanup import cleanup_service
 
 # Configure logging
 logging.basicConfig(
@@ -30,10 +32,17 @@ async def lifespan(app: FastAPI):
     redis_client.connect()
     redis_multi_entity_client.connect()
     
+    # Start memory cleanup service
+    cleanup_service.start()
+    
     yield
     
     # Shutdown
     logger.info("Shutting down Engram...")
+    
+    # Stop cleanup service
+    cleanup_service.stop()
+    
     redis_client.close()
     # Note: Add close method to multi-entity client if needed
     await embedding_service.close()
@@ -58,6 +67,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(router, prefix=settings.api_prefix)
 app.include_router(multi_entity_router, prefix="/cam")
+app.include_router(curated_router, prefix="/cam")  # Curated memory endpoints
 app.include_router(admin_router, prefix="/api/v1")
 
 
@@ -69,7 +79,7 @@ async def root():
         "version": settings.api_version,
         "status": "running",
         "description": "Content Addressable Memory system for AI agents",
-        "features": ["single-agent", "multi-entity", "witness-based-access"]
+        "features": ["single-agent", "multi-entity", "witness-based-access", "ai-curation", "intelligent-cleanup"]
     }
 
 

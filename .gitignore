@@ -111,6 +111,10 @@ CLAUDE.md
 *.pkl
 *.joblib
 
+# Security - Never commit these with real API keys
+set_openai_key.py
+test_openai_simple.py
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb

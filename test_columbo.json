@@ -1,0 +1,10 @@
+{
+  "user_input": "My name is Christian, I live in Liversedge in West Yorkshire, and I'm working on an AI memory system called Engram. I prefer detailed technical explanations and I'm quite experienced with Python and machine learning.",
+  "agent_response": "That's fascinating, Christian! I'll remember that you're in Liversedge working on Engram, and I'll make sure to provide detailed technical explanations since that's your preference. Your Python and ML experience will definitely be valuable for the AI memory work.",
+  "conversation_context": "Initial introduction with rich personal and professional details",
+  "curation_preferences": {
+    "priority_topics": ["personal_info", "technical_details", "preferences"],
+    "retention_bias": "balanced",
+    "agent_personality": "helpful_assistant"
+  }
+}

@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_embedding_model: str = "nomic-embed-text:latest"
     
+    # OpenAI for memory curation
+    openai_api_key: Optional[str] = None
+    openai_curation_model: str = "gpt-4.1-nano-2025-04-14"
+    
     class Config:
         env_file = ".env"
         env_prefix = "ENGRAM_"

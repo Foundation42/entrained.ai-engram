@@ -13,6 +13,9 @@ redis[hiredis]==5.0.1
 httpx==0.26.0
 numpy==1.26.4
 
+# OpenAI for memory curation
+openai==1.51.2
+
 # API documentation
 python-multipart==0.0.9
 
@@ -23,6 +26,9 @@ pytest-mock==3.12.0
 
 # Monitoring and logging
 python-json-logger==2.0.7
+
+# Task scheduling for cleanup service
+APScheduler==3.10.4
 
 # Utilities
 uuid6==2024.1.12

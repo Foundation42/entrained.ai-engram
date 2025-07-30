@@ -1,0 +1,10 @@
+{
+  "user_input": "It's raining today",
+  "agent_response": "That's unfortunate about the weather today.",
+  "conversation_context": "Casual weather comment",
+  "curation_preferences": {
+    "priority_topics": ["personal_info", "technical_details"],
+    "retention_bias": "balanced",
+    "agent_personality": "helpful_assistant"
+  }
+}

@@ -177,7 +177,11 @@ async def retrieve_multi_entity_memories(request: MultiEntityRetrievalRequest):
             denial_phrases = [
                 "don't have access", "don't know", "sorry", "can't", "unable", 
                 "i don't have", "i'm sorry", "i cannot", "no access to personal data",
-                "don't remember", "can't remember", "no memory of", "not familiar with"
+                "don't remember", "can't remember", "no memory of", "not familiar with",
+                "haven't mentioned", "you haven't", "didn't tell me", "haven't told me",
+                "haven't shared", "not provided", "haven't provided", "no information about",
+                "would need you to", "please tell me", "feel free to share", "happy to help",
+                "don't recall", "can't recall", "no record of", "not aware of"
             ]
             
             non_denial_results = []

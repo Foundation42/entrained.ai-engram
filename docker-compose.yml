@@ -29,6 +29,7 @@ services:
       - ENGRAM_REDIS_PORT=6379
       - ENGRAM_OLLAMA_BASE_URL=http://host.docker.internal:11434
       - ENGRAM_DEBUG=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       redis:
         condition: service_healthy
