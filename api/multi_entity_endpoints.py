@@ -47,13 +47,27 @@ async def store_multi_entity_memory(request: MultiEntityMemoryCreateRequest):
         )
         
         # Create access control
+        privacy_level = 'participants_only'
+        if request.access_control and isinstance(request.access_control, dict):
+            privacy_level = request.access_control.get('privacy_level', 'participants_only')
+        
         access_control = AccessControl(
             witnessed_by=request.witnessed_by,
-            privacy_level=request.access_control.get('privacy_level', 'participants_only') if request.access_control else 'participants_only'
+            privacy_level=privacy_level
         )
         
-        # Create metadata
-        metadata = MultiEntityMetadata(**request.metadata)
+        # Create metadata with validation
+        try:
+            metadata = MultiEntityMetadata(**request.metadata)
+        except Exception as e:
+            logger.error(f"Error creating metadata: {e}")
+            # Create with required fields only
+            metadata = MultiEntityMetadata(
+                timestamp=request.metadata.get('timestamp', datetime.utcnow()),
+                situation_duration_minutes=request.metadata.get('situation_duration_minutes'),
+                interaction_quality=request.metadata.get('interaction_quality'),
+                topic_tags=request.metadata.get('topic_tags', [])
+            )
         
         # Create memory object
         memory = MultiEntityMemory(
@@ -128,24 +142,31 @@ async def retrieve_multi_entity_memories(request: MultiEntityRetrievalRequest):
         entity_filters = request.entity_filters.dict() if request.entity_filters else {}
         situation_filters = request.situation_filters.dict() if request.situation_filters else {}
         
+        # Get retrieval options safely
+        if isinstance(request.retrieval_options, dict):
+            top_k = request.retrieval_options.get('top_k', 10)
+            similarity_threshold = request.retrieval_options.get('similarity_threshold', 0.7)
+        else:
+            top_k = 10
+            similarity_threshold = 0.7
+        
         # Search memories with access control
         results = redis_multi_entity_client.search_memories(
             requesting_entity=request.requesting_entity,
             query_vector=query_vector,
-            top_k=request.retrieval_options.get('top_k', 10),
+            top_k=top_k,
             entity_filters=entity_filters,
             situation_filters=situation_filters
         )
         
         # Filter by similarity threshold
-        similarity_threshold = request.retrieval_options.get('similarity_threshold', 0.7)
         filtered_results = [r for r in results if r['similarity_score'] >= similarity_threshold]
         
         # Convert to response format
         memories = []
         access_denied_count = 0
         
-        for result in filtered_results[:request.retrieval_options.get('top_k', 10)]:
+        for result in filtered_results[:top_k]:
             if result['access_granted']:
                 memories.append(MultiEntityMemorySearchResult(**result))
             else:
