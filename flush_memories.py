@@ -8,15 +8,18 @@ import sys
 from core.config import settings
 
 
-def flush_memories():
+def flush_memories(force=False):
     """Remove all memory-related keys from Redis"""
     
     print("⚠️  WARNING: This will delete ALL memories from the Engram server!")
-    response = input("Are you sure you want to continue? (yes/no): ")
     
-    if response.lower() != 'yes':
-        print("Aborted.")
-        return
+    if not force:
+        response = input("Are you sure you want to continue? (yes/no): ")
+        if response.lower() != 'yes':
+            print("Aborted.")
+            return
+    else:
+        print("Force flag set, proceeding...")
     
     try:
         # Connect to Redis
@@ -142,4 +145,4 @@ if __name__ == "__main__":
     if args.all:
         flush_all_redis()
     else:
-        flush_memories()
+        flush_memories(force=args.force)

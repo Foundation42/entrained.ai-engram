@@ -120,7 +120,8 @@ class RedisHashClient:
             
             # Safely extract and convert values
             hash_data['id'] = str(memory_id)
-            hash_data['agent_id'] = str(agent_id)
+            # Remove hyphens from agent_id for Redis TAG compatibility
+            hash_data['agent_id'] = str(agent_id).replace('-', '')
             
             # Handle content
             content_text = memory_data.get('content', {}).get('text', '')
@@ -133,10 +134,13 @@ class RedisHashClient:
             # Session ID - use 'none' for empty to ensure filtering works
             session_id = metadata.get('session_id')
             if session_id:
-                hash_data['session_id'] = str(session_id)
+                # Remove hyphens from session_id for Redis TAG compatibility
+                hash_data['session_id'] = str(session_id).replace('-', '')
             else:
                 hash_data['session_id'] = 'none'  # Use 'none' instead of empty string
-            hash_data['thread_id'] = str(metadata.get('thread_id', ''))
+            # Remove hyphens from thread_id for Redis TAG compatibility
+            thread_id = metadata.get('thread_id', '')
+            hash_data['thread_id'] = str(thread_id).replace('-', '') if thread_id else ''
             
             # Handle participants
             participants = metadata.get('participants', [])
@@ -262,9 +266,9 @@ class RedisHashClient:
             
             # Agent filter
             if filters and filters.get("agent_ids"):
-                # Escape special characters
-                escaped_aids = [str(aid).replace("-", "\\-").replace(".", "\\.") for aid in filters["agent_ids"]]
-                agent_filter = "|".join(escaped_aids)
+                # Remove hyphens from agent IDs (same as storage)
+                cleaned_aids = [str(aid).replace("-", "") for aid in filters["agent_ids"]]
+                agent_filter = "|".join(cleaned_aids)
                 filter_parts.append(f"@agent_id:{{{agent_filter}}}")
             
             # Tag filter  
@@ -279,20 +283,20 @@ class RedisHashClient:
             
             # Session filter (for isolation)
             if filters and filters.get("session_ids"):
-                # Escape special characters in session IDs
-                escaped_sids = []
+                # Remove hyphens from session IDs (same as storage)
+                cleaned_sids = []
                 for sid in filters["session_ids"]:
-                    # Escape hyphens and other special chars for Redis search
-                    escaped_sid = str(sid).replace("-", "\\-").replace(".", "\\.")
-                    escaped_sids.append(escaped_sid)
-                session_filter = "|".join(escaped_sids)
+                    # Remove hyphens to match how they're stored
+                    cleaned_sid = str(sid).replace("-", "")
+                    cleaned_sids.append(cleaned_sid)
+                session_filter = "|".join(cleaned_sids)
                 filter_parts.append(f"@session_id:{{{session_filter}}}")
             
             # Thread filter
             if filters and filters.get("thread_ids"):
-                # Escape special characters
-                escaped_tids = [str(tid).replace("-", "\\-").replace(".", "\\.") for tid in filters["thread_ids"]]
-                thread_filter = "|".join(escaped_tids)
+                # Remove hyphens from thread IDs (same as storage)
+                cleaned_tids = [str(tid).replace("-", "") for tid in filters["thread_ids"]]
+                thread_filter = "|".join(cleaned_tids)
                 filter_parts.append(f"@thread_id:{{{thread_filter}}}")
             
             # Participants filter
@@ -353,7 +357,7 @@ class RedisHashClient:
             except redis.exceptions.ResponseError as e:
                 if "No such index" in str(e):
                     logger.warning(f"Vector index {settings.vector_index_name} not found, creating it...")
-                    self.ensure_vector_index()
+                    self._ensure_vector_index()
                     # Retry the search after creating index
                     results = self.client.execute_command(
                         'FT.SEARCH',
