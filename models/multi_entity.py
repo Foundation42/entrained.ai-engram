@@ -85,7 +85,7 @@ class MultiEntityMemoryCreateRequest(BaseModel):
 
 class EntityFilter(BaseModel):
     """Filters for entity-based memory retrieval"""
-    witnessed_by_includes: List[str]  # Must include these entities
+    witnessed_by_includes: Optional[List[str]] = None  # Must include these entities
     co_participants: Optional[List[str]] = None  # Memories with specific others
     exclude_private_to: Optional[List[str]] = None  # Exclude memories private to others
     entity_roles: Optional[Dict[str, str]] = None  # Filter by entity roles
