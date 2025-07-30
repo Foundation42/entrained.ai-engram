@@ -166,6 +166,20 @@ Environment variables (prefix with `ENGRAM_`):
 - `OLLAMA_BASE_URL` - Ollama API URL (default: http://localhost:11434)
 - `DEBUG` - Enable debug mode (default: false)
 
+## 🕵️ Built-in Witness Protection 🕵️
+
+Engram comes with the world's most advanced **Witness Protection Program**:
+
+- **No Backdoors**: Even system admins can't access memories they didn't witness
+- **Natural Privacy Boundaries**: If you weren't there, you can't see it
+- **Tamper-Proof Testimony**: Vector-based memory storage prevents witness tampering
+- **Anonymous Witnesses**: Support for `anonymous-witness-uuid` entity IDs
+- **Cross-Examination Resistance**: No central authority can override witness permissions
+- **Memory Relocation**: Witnesses can change entity IDs without losing access
+- **Safe House Storage**: Isolated Redis indexes protect sensitive memories
+
+*"The only memory system where witnesses are truly protected!"* 🛡️
+
 ## Future Enhancements
 
 - Causality chain visualization
@@ -173,6 +187,7 @@ Environment variables (prefix with `ENGRAM_`):
 - Distributed deployment
 - Multi-modal embeddings
 - Memory consolidation
+- **Witness Protection Dashboard** 🔍 (coming soon!)
 
 ## License
 
