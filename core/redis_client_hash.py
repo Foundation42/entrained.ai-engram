@@ -130,7 +130,12 @@ class RedisHashClient:
             metadata = memory_data.get('metadata', {})
             hash_data['memory_type'] = str(metadata.get('memory_type', 'general'))
             hash_data['domain'] = str(metadata.get('domain', ''))
-            hash_data['session_id'] = str(metadata.get('session_id', ''))
+            # Session ID - use 'none' for empty to ensure filtering works
+            session_id = metadata.get('session_id')
+            if session_id:
+                hash_data['session_id'] = str(session_id)
+            else:
+                hash_data['session_id'] = 'none'  # Use 'none' instead of empty string
             hash_data['thread_id'] = str(metadata.get('thread_id', ''))
             
             # Handle participants
@@ -162,6 +167,9 @@ class RedisHashClient:
             # Store full data as JSON (with safe serialization)
             hash_data['metadata_json'] = json.dumps(metadata, default=str)
             hash_data['content_json'] = json.dumps(memory_data.get('content', {}), default=str)
+            
+            # Debug log the session_id being stored
+            logger.info(f"Storing memory with session_id: {hash_data.get('session_id', 'NONE')}")
             
             # Store hash fields
             self.client.hset(key, mapping=hash_data)
@@ -308,6 +316,11 @@ class RedisHashClient:
             
             # Build KNN query
             knn_query = f"{base_query}=>[KNN {top_k} @embedding $query_vector AS vector_score]"
+            
+            # Debug logging
+            logger.info(f"Search filters: {filters}")
+            logger.info(f"Filter parts: {filter_parts}")
+            logger.info(f"Final query: {knn_query}")
             
             # Convert query vector to binary
             query_buffer = np.array(query_vector, dtype=np.float32).tobytes()
