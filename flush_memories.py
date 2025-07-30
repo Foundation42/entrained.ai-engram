@@ -39,6 +39,8 @@ def flush_memories(force=False):
         memory_keys = []
         annotation_keys = []
         causality_keys = []
+        entity_access_keys = []
+        situation_keys = []
         
         # Scan for all keys
         for key in client.scan_iter("*"):
@@ -51,13 +53,21 @@ def flush_memories(force=False):
                 annotation_keys.append(key)
             elif key_str.startswith("causality:"):
                 causality_keys.append(key)
+            elif key_str.startswith("entity_access:"):
+                entity_access_keys.append(key)
+            elif key_str.startswith("situation:"):
+                situation_keys.append(key)
         
         print(f"\nFound {len(all_keys)} total keys:")
         print(f"  - {len(memory_keys)} memory keys")
         print(f"  - {len(annotation_keys)} annotation keys")
         print(f"  - {len(causality_keys)} causality keys")
+        print(f"  - {len(entity_access_keys)} entity access keys (multi-entity)")
+        print(f"  - {len(situation_keys)} situation keys (multi-entity)")
         
-        if not memory_keys and not annotation_keys and not causality_keys:
+        all_memory_related = memory_keys + annotation_keys + causality_keys + entity_access_keys + situation_keys
+        
+        if not all_memory_related:
             print("\n✅ No memories to flush!")
             return
         
@@ -69,18 +79,26 @@ def flush_memories(force=False):
         # Delete in batches for efficiency
         batch_size = 1000
         
-        for keys_to_delete in [memory_keys, annotation_keys, causality_keys]:
+        for keys_to_delete in [memory_keys, annotation_keys, causality_keys, entity_access_keys, situation_keys]:
             for i in range(0, len(keys_to_delete), batch_size):
                 batch = keys_to_delete[i:i + batch_size]
                 if batch:
                     deleted_count += client.delete(*batch)
         
-        # Also delete the vector index (it will be recreated automatically)
+        # Also delete the vector indexes (they will be recreated automatically)
         try:
             client.execute_command('FT.DROPINDEX', settings.vector_index_name)
             print(f"✅ Dropped vector index: {settings.vector_index_name}")
         except:
             print(f"ℹ️  Vector index {settings.vector_index_name} not found or already dropped")
+        
+        # Drop multi-entity index
+        try:
+            multi_entity_index = f"{settings.vector_index_name}_multi"
+            client.execute_command('FT.DROPINDEX', multi_entity_index)
+            print(f"✅ Dropped multi-entity vector index: {multi_entity_index}")
+        except:
+            print(f"ℹ️  Multi-entity vector index not found or already dropped")
         
         print(f"\n✅ Successfully flushed {deleted_count} keys!")
         
