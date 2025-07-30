@@ -156,10 +156,10 @@ class RedisMultiEntityClient:
                 hash_data['situation_id'] = str(getattr(situation, 'situation_id', '')).replace('-', '')
                 hash_data['situation_type'] = str(getattr(situation, 'situation_type', 'unknown'))
             
-            # Content
+            # Content - ensure all values are strings, not None
             content = memory_data.get('content', {})
-            hash_data['content'] = content.get('text', '')
-            hash_data['summary'] = content.get('summary', '')
+            hash_data['content'] = content.get('text') or ''
+            hash_data['summary'] = content.get('summary') or ''
             
             # Speakers breakdown (store as JSON)
             speakers = content.get('speakers', {})
@@ -194,19 +194,8 @@ class RedisMultiEntityClient:
             # Store full data as JSON
             hash_data['memory_json'] = json.dumps(memory_data, default=str)
             
-            # Store hash fields - debug what's causing serialization issues
-            try:
-                # Debug: Check for non-serializable values
-                for field_key, field_value in hash_data.items():
-                    if not isinstance(field_value, (str, int, float, bytes)):
-                        logger.error(f"Non-serializable field '{field_key}': {type(field_value)} = {field_value}")
-                        # Convert to string as fallback
-                        hash_data[field_key] = str(field_value)
-                
-                self.client.hset(key, mapping=hash_data)
-            except Exception as e:
-                logger.error(f"Redis hset failed for key {key}. Hash data types: {[(k, type(v)) for k, v in hash_data.items()]}")
-                raise e
+            # Store hash fields
+            self.client.hset(key, mapping=hash_data)
             
             # Store vector as binary
             vector_buffer = np.array(vector, dtype=np.float32).tobytes()
