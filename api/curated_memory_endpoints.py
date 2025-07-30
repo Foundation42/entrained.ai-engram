@@ -97,16 +97,26 @@ async def store_curated_memory(request: CuratedMemoryCreateRequest, background_t
         
         # Enhance memory metadata with curation info
         enhanced_metadata = request.metadata.copy() if request.metadata else {}
+        
+        # Extract enum values safely
+        storage_type_value = decision.storage_type.value if hasattr(decision.storage_type, 'value') else str(decision.storage_type)
+        retention_policy_value = decision.retention_policy.value if hasattr(decision.retention_policy, 'value') else str(decision.retention_policy)
+        privacy_sensitivity_value = decision.privacy_sensitivity.value if hasattr(decision.privacy_sensitivity, 'value') else str(decision.privacy_sensitivity)
+        
+        # Calculate expiry safely
+        expiry_date = get_retention_expiry(retention_policy_value)
+        expires_at = expiry_date.isoformat() if expiry_date else None
+        
         enhanced_metadata.update({
-            "storage_type": decision.storage_type.value if hasattr(decision.storage_type, 'value') else str(decision.storage_type),
-            "retention_policy": decision.retention_policy.value if hasattr(decision.retention_policy, 'value') else str(decision.retention_policy),
-            "privacy_sensitivity": decision.privacy_sensitivity.value if hasattr(decision.privacy_sensitivity, 'value') else str(decision.privacy_sensitivity),
+            "storage_type": storage_type_value,
+            "retention_policy": retention_policy_value,
+            "privacy_sensitivity": privacy_sensitivity_value,
             "confidence_score": decision.confidence_score,
             "tags": decision.tags,
             "key_information": decision.key_information,
             "curation_timestamp": datetime.utcnow().isoformat(),
             "curation_version": "1.0",
-            "expires_at": get_retention_expiry(decision.retention_policy).isoformat() if get_retention_expiry(decision.retention_policy) else None,
+            "expires_at": expires_at,
             "access_count": 0,
             "consolidation_group": None
         })
@@ -130,8 +140,8 @@ async def store_curated_memory(request: CuratedMemoryCreateRequest, background_t
         # Add curation info to response
         result.update({
             "curation_decision": {
-                "storage_type": decision.storage_type.value if hasattr(decision.storage_type, 'value') else str(decision.storage_type),
-                "retention_policy": decision.retention_policy.value if hasattr(decision.retention_policy, 'value') else str(decision.retention_policy),
+                "storage_type": storage_type_value,
+                "retention_policy": retention_policy_value,
                 "confidence_score": decision.confidence_score,
                 "key_information": decision.key_information,
                 "reasoning": decision.reasoning
@@ -139,7 +149,7 @@ async def store_curated_memory(request: CuratedMemoryCreateRequest, background_t
         })
         
         # Schedule cleanup check in background
-        if decision.retention_policy != "permanent":
+        if retention_policy_value != "permanent":
             background_tasks.add_task(_schedule_cleanup_check, result["memory_id"])
         
         return result
