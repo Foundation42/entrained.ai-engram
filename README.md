@@ -154,6 +154,13 @@ python tests/advanced_test_suite.py
 - `GET /health` - Health check with Redis and vector index status
 - `GET /` - API info and version
 
+### Admin Endpoints (🔐 Protected)
+- `POST /api/v1/admin/flush/memories` - Safely flush all memories (preserves indexes)
+- `POST /api/v1/admin/recreate/indexes` - Recreate missing vector indexes
+- `GET /api/v1/admin/status` - Detailed system health monitoring
+
+**Admin Authentication:** HTTP Basic Auth with username `admin` and password `engram-admin-2025`
+
 See [AGENT_INTEGRATION_GUIDE.md](AGENT_INTEGRATION_GUIDE.md) for detailed integration examples including the new multi-entity features.
 
 ## Configuration
