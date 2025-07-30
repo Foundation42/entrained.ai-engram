@@ -4,7 +4,7 @@ Memory Curation Models for AI-powered memory analysis and categorization
 
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from enum import Enum
 
 
@@ -56,6 +56,7 @@ class MemoryObservation(BaseModel):
     tags: List[str] = Field(default_factory=list, description="Semantic tags for this observation")
     reasoning: str = Field(description="Why this observation was noted")
     
+    @computed_field
     @property
     def should_store(self) -> bool:
         """Business logic: should this observation be stored?"""
@@ -92,6 +93,7 @@ class MemoryDecision(BaseModel):
     overall_reasoning: str = Field(description="Overall analysis of the conversation turn")
     consolidation_candidates: List[str] = Field(default_factory=list, description="Memory IDs that could be merged")
     
+    @computed_field
     @property
     def should_store(self) -> bool:
         """Whether any observations should be stored (derived from business logic)"""
