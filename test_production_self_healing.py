@@ -28,7 +28,7 @@ def test_self_healing():
             },
             "summary": "Self-healing test conversation"
         },
-        "primary_vector": [0.5] * 768,  # Different from our usual test vector
+        "primary_vector": [0.5] * 1536,  # Different from our usual test vector
         "metadata": {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "interaction_quality": 0.99,
@@ -55,7 +55,7 @@ def test_self_healing():
     retrieve_request = {
         "requesting_entity": "human-christian-test",
         "resonance_vectors": [{
-            "vector": [0.5] * 768,  # Same as stored vector
+            "vector": [0.5] * 1536,  # Same as stored vector
             "weight": 1.0
         }],
         "retrieval_options": {
@@ -93,7 +93,7 @@ def test_self_healing():
     different_entity_request = {
         "requesting_entity": "unauthorized-entity-123",
         "resonance_vectors": [{
-            "vector": [0.5] * 768,
+            "vector": [0.5] * 1536,
             "weight": 1.0
         }],
         "retrieval_options": {

@@ -29,7 +29,7 @@ def test_multi_entity_store():
             },
             "summary": "Test greeting"
         },
-        "primary_vector": [0.1] * 768,  # Dummy embedding
+        "primary_vector": [0.1] * settings.vector_dimensions,  # Dummy embedding
         "metadata": {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "interaction_quality": 0.9,
@@ -72,7 +72,7 @@ def test_multi_entity_retrieve(memory_id=None):
     request = {
         "requesting_entity": "test-entity-1",
         "resonance_vectors": [{
-            "vector": [0.1] * 768,
+            "vector": [0.1] * settings.vector_dimensions,
             "weight": 1.0
         }],
         "retrieval_options": {

@@ -15,7 +15,7 @@ async def test_single_filter():
     print("=" * 60)
     
     # Simple test embedding
-    test_embedding = [0.1] * 768
+    test_embedding = [0.1] * settings.vector_dimensions
     
     async with httpx.AsyncClient(timeout=30.0) as client:
         # Request with filters

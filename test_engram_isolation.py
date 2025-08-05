@@ -218,7 +218,7 @@ class EngramIsolationTester:
                             "requesting_entity": entity.entity_id,
                             "resonance_vectors": [
                                 {
-                                    "vector": [0.1] * 768,  # Dummy vector for testing
+                                    "vector": [0.1] * settings.vector_dimensions,  # Dummy vector for testing
                                     "weight": 1.0,
                                     "source": query
                                 }

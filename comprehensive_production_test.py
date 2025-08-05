@@ -228,7 +228,7 @@ class ProductionTestSuite:
                 for witness in ["secret-user-1", "secret-user-2"]:
                     retrieval_request = {
                         "requesting_entity": witness,
-                        "resonance_vectors": [{"vector": [0.5] * 768, "weight": 1.0}],
+                        "resonance_vectors": [{"vector": [0.5] * 1536, "weight": 1.0}],
                         "retrieval_options": {"top_k": 10, "similarity_threshold": 0.0}
                     }
                     
@@ -244,7 +244,7 @@ class ProductionTestSuite:
                 for non_witness in ["human-christian-test", "agent-claude-test", "random-user"]:
                     retrieval_request = {
                         "requesting_entity": non_witness,
-                        "resonance_vectors": [{"vector": [0.5] * 768, "weight": 1.0}],
+                        "resonance_vectors": [{"vector": [0.5] * 1536, "weight": 1.0}],
                         "retrieval_options": {"top_k": 10, "similarity_threshold": 0.0}
                     }
                     
@@ -371,7 +371,7 @@ class ProductionTestSuite:
                 "speakers": {"perf-test-user": "Testing speed"},
                 "summary": "Speed test"
             },
-            "primary_vector": [0.5] * 768,
+            "primary_vector": [0.5] * 1536,
             "metadata": {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "interaction_quality": 1.0,
@@ -394,7 +394,7 @@ class ProductionTestSuite:
         start_time = time.time()
         retrieval_request = {
             "requesting_entity": "perf-test-user",
-            "resonance_vectors": [{"vector": [0.5] * 768, "weight": 1.0}],
+            "resonance_vectors": [{"vector": [0.5] * 1536, "weight": 1.0}],
             "retrieval_options": {"top_k": 10, "similarity_threshold": 0.0}
         }
         

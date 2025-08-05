@@ -21,7 +21,7 @@ async def validate_session_isolation():
     session2_id = f"test-session-{uuid.uuid4()}"
     
     # Simple embedding for testing
-    test_embedding = [0.1] * 768
+    test_embedding = [0.1] * settings.vector_dimensions
     
     async with httpx.AsyncClient(timeout=30.0) as client:
         print(f"\nSession 1: {session1_id}")

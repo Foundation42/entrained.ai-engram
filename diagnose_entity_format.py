@@ -56,7 +56,7 @@ async def diagnose_entity_format():
                     },
                     "summary": f"Diagnostic test for {test['name']}"
                 },
-                "primary_vector": [0.1] * 768,  # Dummy vector
+                "primary_vector": [0.1] * settings.vector_dimensions,  # Dummy vector
                 "metadata": {
                     "timestamp": "2025-07-30T12:00:00Z",
                     "situation_duration_minutes": 1,
@@ -75,7 +75,7 @@ async def diagnose_entity_format():
                 retrieval = {
                     "requesting_entity": test['entity_id'],
                     "resonance_vectors": [{
-                        "vector": [0.1] * 768,
+                        "vector": [0.1] * settings.vector_dimensions,
                         "weight": 1.0
                     }],
                     "retrieval_options": {

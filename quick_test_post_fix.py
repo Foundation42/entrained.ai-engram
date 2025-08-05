@@ -19,7 +19,7 @@ test_memory = {
         },
         "summary": "Post-fix validation test"
     },
-    "primary_vector": [0.1] * 768,
+    "primary_vector": [0.1] * settings.vector_dimensions,
     "metadata": {
         "timestamp": "2025-07-30T18:30:00Z",
         "interaction_quality": 1.0,
@@ -39,7 +39,7 @@ if response.status_code == 200:
     retrieval_request = {
         "requesting_entity": "test-post-fix-user",
         "resonance_vectors": [{
-            "vector": [0.1] * 768,
+            "vector": [0.1] * settings.vector_dimensions,
             "weight": 1.0
         }],
         "retrieval_options": {

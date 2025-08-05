@@ -113,7 +113,7 @@ def inspect_stored_entities():
             retrieve_request = {
                 "requesting_entity": entity,
                 "resonance_vectors": [{
-                    "vector": [0.5] * 768,
+                    "vector": [0.5] * 1536,
                     "weight": 1.0
                 }],
                 "retrieval_options": {

@@ -18,6 +18,7 @@ import json
 from datetime import datetime
 from typing import Dict, Any, List
 from dataclasses import dataclass
+from core.config import settings
 
 @dataclass
 class TestEntity:
@@ -142,7 +143,7 @@ class DirectEngramIsolationTester:
             )
             
             # Generate embedding (using zeros for test - in production would use actual embedding)
-            embedding = [0.1] * 768
+            embedding = [0.1] * settings.vector_dimensions
             
             # Create storage request
             storage_request = {
@@ -209,7 +210,7 @@ class DirectEngramIsolationTester:
             
             # Test name recall
             name_query = "What is my name?"
-            embedding = [0.1] * 768  # Simplified for test
+            embedding = [0.1] * settings.vector_dimensions  # Simplified for test
             
             retrieval_request = {
                 "requesting_entity": entity.entity_id,
@@ -374,7 +375,7 @@ class DirectEngramIsolationTester:
         for asking_entity, other_entity in isolation_tests:
             # Query for the other entity's name
             query = f"Do you know anything about {other_entity.name}?"
-            embedding = [0.1] * 768
+            embedding = [0.1] * settings.vector_dimensions
             
             isolation_request = {
                 "requesting_entity": asking_entity.entity_id,

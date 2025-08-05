@@ -16,7 +16,7 @@ async def test_filter_parsing():
     print("=" * 80)
     
     # Simple test embedding
-    test_embedding = [0.1] * 768
+    test_embedding = [0.1] * settings.vector_dimensions
     
     async with httpx.AsyncClient(timeout=30.0) as client:
         # Test 1: Request WITH filters object
