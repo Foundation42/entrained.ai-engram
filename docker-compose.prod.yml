@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:7.4.0-v2
+    container_name: entrained-ai-engram-redis
+    ports:
+      - "6379:6379"
+      - "8002:8001"  # RedisInsight web UI
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_APPENDONLY=yes
+      - REDIS_MAXMEMORY=512mb
+      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - engram-network
+
+  engram:
+    build: .
+    container_name: entrained-ai-engram-api
+    # No external ports - only accessible via nginx
+    env_file:
+      - .env
+    environment:
+      - ENGRAM_REDIS_HOST=redis
+      - ENGRAM_REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - engram-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: entrained-ai-engram-nginx
+    ports:
+      - "8443:443"
+      - "8080:80"  # HTTP redirect
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - engram
+    networks:
+      - engram-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+
+networks:
+  engram-network:
+    driver: bridge
+    name: entrained-ai-engram-network
