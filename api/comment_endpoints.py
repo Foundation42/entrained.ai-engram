@@ -156,24 +156,30 @@ async def get_article_thread(
     try:
         logger.info(f"Retrieving comment thread for article {article_id}")
         
-        # Search for all comments on this article
+        # Search for all comments on this article - use broader search and filter by metadata
         comments_search = redis_multi_entity_client.search_memories(
             requesting_entity="public",
-            query_vector=[0.0] * 768,  # Dummy vector - we're filtering by metadata
+            query_vector=[0.1] * 768,  # Use small positive vector instead of all zeros
             top_k=1000,  # Get all comments
             entity_filters={"witnessed_by_includes": ["public"]},
             situation_filters={
-                "situation_types": ["public_discussion"],
-                "contexts": [f"Comment thread on {article_id}"]
+                "situation_types": ["public_discussion"]
+                # Remove context filter - we'll filter by metadata instead
             }
         )
         
-        # Filter to only this article's comments
+        logger.info(f"Found {len(comments_search)} total memories in search")
+        
+        # Filter to only this article's comments using metadata
         article_comments = []
         for result in comments_search:
             metadata = result.get('metadata', {})
-            if metadata.get('article_id') == article_id:
+            result_article_id = metadata.get('article_id')
+            logger.debug(f"Checking memory {result.get('memory_id')} with article_id: {result_article_id}")
+            if result_article_id == article_id:
                 article_comments.append(result)
+        
+        logger.info(f"Found {len(article_comments)} comments for article {article_id}")
         
         # Convert to ThreadComment objects and build hierarchy
         thread_comments = []
