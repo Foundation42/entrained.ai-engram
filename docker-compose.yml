@@ -9,8 +9,6 @@ services:
       - "8002:8001"  # RedisInsight web UI
     volumes:
       - redis_data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
-    command: redis-stack-server /usr/local/etc/redis/redis.conf
     environment:
       - REDIS_APPENDONLY=yes
       - REDIS_MAXMEMORY=512mb
