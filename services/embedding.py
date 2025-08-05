@@ -1,5 +1,6 @@
 import httpx
 import logging
+import os
 from typing import List, Optional
 import numpy as np
 
@@ -9,42 +10,58 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    """Service for generating embeddings using Ollama"""
+    """Service for generating embeddings using OpenAI"""
     
     def __init__(self):
-        self.base_url = settings.ollama_base_url
-        self.model = settings.ollama_embedding_model
+        # Use OpenAI API for embeddings
+        self.api_key = os.getenv("OPENAI_API_KEY") or settings.openai_api_key
+        self.model = "text-embedding-3-small"
+        self.base_url = "https://api.openai.com/v1"
         self.client = httpx.AsyncClient(timeout=30.0)
+        
+        if not self.api_key:
+            logger.error("OpenAI API key not configured")
     
     async def generate_embedding(self, text: str) -> Optional[List[float]]:
-        """Generate embedding vector for given text"""
+        """Generate embedding vector for given text using OpenAI"""
+        if not self.api_key:
+            logger.error("OpenAI API key not available")
+            return None
+            
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/embeddings",
+                f"{self.base_url}/embeddings",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
                 json={
                     "model": self.model,
-                    "prompt": text
+                    "input": text,
+                    "encoding_format": "float"
                 }
             )
             
             if response.status_code == 200:
                 data = response.json()
-                embedding = data.get("embedding", [])
+                embedding = data["data"][0]["embedding"]
                 
-                # Ensure correct dimensions
-                if len(embedding) != settings.vector_dimensions:
+                # OpenAI text-embedding-3-small uses 1536 dimensions
+                expected_dims = 1536
+                if len(embedding) != expected_dims:
                     logger.warning(
-                        f"Embedding dimension mismatch: expected {settings.vector_dimensions}, "
+                        f"Embedding dimension mismatch: expected {expected_dims}, "
                         f"got {len(embedding)}"
                     )
                 
+                logger.debug(f"Generated embedding with {len(embedding)} dimensions")
                 return embedding
             else:
-                logger.error(f"Failed to generate embedding: {response.status_code}")
+                logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
                 return None
                 
         except Exception as e:
-            logger.error(f"Error generating embedding: {e}")
+            logger.error(f"Error generating OpenAI embedding: {e}")
             return None
     
     async def generate_embeddings_batch(self, texts: List[str]) -> List[Optional[List[float]]]:

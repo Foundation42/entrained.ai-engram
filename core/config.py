@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     redis_decode_responses: bool = False
     
     # Vector settings
-    vector_dimensions: int = 768  # nomic-embed-text uses 768 dimensions
+    vector_dimensions: int = 1536  # OpenAI text-embedding-3-small uses 1536 dimensions
     vector_index_name: str = "engram_vector_idx"
     vector_distance_metric: str = "COSINE"
     vector_algorithm: str = "HNSW"

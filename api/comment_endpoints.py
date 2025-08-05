@@ -98,10 +98,10 @@ async def store_comment(request: CommentEngramRequest, background_tasks: Backgro
             primary_vector = await embedding_service.generate_embedding(request.comment_text)
             if not primary_vector:
                 logger.warning("Embedding service returned None, using default vector")
-                primary_vector = [0.1] * 768  # Default vector for testing
+                primary_vector = [0.1] * 1536  # OpenAI dimensions
         except Exception as e:
             logger.error(f"Embedding service error: {e}, using default vector")
-            primary_vector = [0.1] * 768  # Default vector for testing
+            primary_vector = [0.1] * 1536  # OpenAI dimensions
         
         # Create the Engram memory request
         engram_request = MultiEntityMemoryCreateRequest(
@@ -164,7 +164,7 @@ async def get_article_thread(
             logger.info("Starting memory search for thread reconstruction...")
             comments_search = redis_multi_entity_client.search_memories(
                 requesting_entity="public",
-                query_vector=[0.1] * 768,  # Use same approach as semantic search
+                query_vector=[0.1] * 1536,  # Use OpenAI dimensions
                 top_k=1000,  # Get all comments
                 entity_filters=entity_filters,
                 situation_filters=situation_filters
@@ -310,7 +310,7 @@ async def find_similar_comments(
         query_vector = await embedding_service.generate_embedding(comment_text)
         if not query_vector:
             logger.warning("Could not generate embedding for query, using default")
-            query_vector = [0.1] * 768
+            query_vector = [0.1] * 1536  # OpenAI dimensions
         
         # Build filters
         entity_filters = {"witnessed_by_includes": ["public"]}
