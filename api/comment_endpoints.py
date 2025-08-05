@@ -175,9 +175,19 @@ async def get_article_thread(
         for result in comments_search:
             metadata = result.get('metadata', {})
             result_article_id = metadata.get('article_id')
-            logger.debug(f"Checking memory {result.get('memory_id')} with article_id: {result_article_id}")
+            memory_id = result.get('memory_id', 'unknown')
+            
+            # Log more details for debugging
+            logger.info(f"Checking memory {memory_id}")
+            logger.info(f"  Article ID in metadata: {result_article_id}")
+            logger.info(f"  Looking for article ID: {article_id}")
+            logger.info(f"  Metadata keys: {list(metadata.keys())}")
+            
             if result_article_id == article_id:
                 article_comments.append(result)
+                logger.info(f"  ✅ MATCH - Added to results")
+            else:
+                logger.info(f"  ❌ NO MATCH - Skipped")
         
         logger.info(f"Found {len(article_comments)} comments for article {article_id}")
         
