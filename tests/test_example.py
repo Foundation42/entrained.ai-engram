@@ -7,10 +7,10 @@ import json
 
 # Example embeddings (normally would come from Ollama)
 def generate_random_embedding(seed=None):
-    """Generate a random 1536-dimensional embedding for testing"""
+    """Generate a random embedding for testing"""
     if seed:
         np.random.seed(seed)
-    embedding = np.random.randn(1536)
+    embedding = np.random.randn(settings.vector_dimensions)
     # Normalize
     embedding = embedding / np.linalg.norm(embedding)
     return embedding.tolist()
@@ -131,7 +131,7 @@ async def test_engram():
         # Create a query vector similar to memory 2 (energy efficiency)
         query_vector = generate_random_embedding(101)
         # Add some noise
-        query_vector = (np.array(query_vector) + np.random.randn(1536) * 0.1).tolist()
+        query_vector = (np.array(query_vector) + np.random.randn(settings.vector_dimensions) * 0.1).tolist()
         
         retrieval_request = {
             "resonance_vectors": [

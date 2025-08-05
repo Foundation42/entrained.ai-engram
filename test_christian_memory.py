@@ -22,7 +22,7 @@ def test_christian_memory():
     ]
     
     # Create a test vector
-    test_vector = [0.5] * 1536
+    test_vector = [0.5] * settings.vector_dimensions
     
     for entity_id in christian_variations:
         print(f"\n🔍 Testing entity ID: {entity_id}")

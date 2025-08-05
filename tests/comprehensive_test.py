@@ -34,7 +34,7 @@ class EngramTestSuite:
             print("Warning: Ollama not available, using random embeddings")
             # Fallback to random embeddings for testing
             random.seed(hash(text))
-            embedding = [random.gauss(0, 1) for _ in range(1536)]
+            embedding = [random.gauss(0, 1) for _ in range(settings.vector_dimensions)]
             # Normalize
             norm = sum(x**2 for x in embedding) ** 0.5
             return [x/norm for x in embedding]

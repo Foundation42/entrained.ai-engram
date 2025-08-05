@@ -47,7 +47,7 @@ class EmbeddingService:
                 embedding = data["data"][0]["embedding"]
                 
                 # OpenAI text-embedding-3-small uses 1536 dimensions
-                expected_dims = 1536
+                expected_dims = settings.vector_dimensions
                 if len(embedding) != expected_dims:
                     logger.warning(
                         f"Embedding dimension mismatch: expected {expected_dims}, "

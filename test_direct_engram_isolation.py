@@ -30,9 +30,15 @@ class TestEntity:
     unique_fact: str
 
 class DirectEngramIsolationTester:
-    def __init__(self, engram_url: str = "http://46.62.130.230:8000"):
+    def __init__(self, engram_url: str = "http://46.62.130.230:8000", api_secret: str = None):
         self.engram_url = engram_url
         self.agent_id = "agent-claude-prime"
+        self.api_secret = api_secret or settings.api_secret_key
+        
+        # Headers for API authentication
+        self.headers = {}
+        if self.api_secret:
+            self.headers["X-API-Key"] = self.api_secret
         
         # Create distinct test entities
         self.entities = [
@@ -173,7 +179,8 @@ class DirectEngramIsolationTester:
             try:
                 response = await client.post(
                     f"{self.engram_url}/cam/curated/store",
-                    json=storage_request
+                    json=storage_request,
+                    headers=self.headers
                 )
                 
                 if response.status_code == 200:
@@ -229,7 +236,8 @@ class DirectEngramIsolationTester:
             try:
                 response = await client.post(
                     f"{self.engram_url}/cam/curated/retrieve",
-                    json=retrieval_request
+                    json=retrieval_request,
+                    headers=self.headers
                 )
                 
                 if response.status_code == 200:
@@ -257,7 +265,8 @@ class DirectEngramIsolationTester:
                     
                     location_response = await client.post(
                         f"{self.engram_url}/cam/curated/retrieve",
-                        json=location_request
+                        json=location_request,
+                        headers=self.headers
                     )
                     
                     if location_response.status_code == 200:
@@ -330,7 +339,8 @@ class DirectEngramIsolationTester:
             try:
                 response = await client.post(
                     f"{self.engram_url}/cam/curated/analyze",
-                    json=analysis_request
+                    json=analysis_request,
+                    headers=self.headers
                 )
                 
                 if response.status_code == 200:
@@ -394,7 +404,8 @@ class DirectEngramIsolationTester:
             try:
                 response = await client.post(
                     f"{self.engram_url}/cam/curated/retrieve",
-                    json=isolation_request
+                    json=isolation_request,
+                    headers=self.headers
                 )
                 
                 if response.status_code == 200:
@@ -448,7 +459,8 @@ class DirectEngramIsolationTester:
         for entity in self.entities:
             try:
                 response = await client.get(
-                    f"{self.engram_url}/cam/curated/stats/{entity.entity_id}"
+                    f"{self.engram_url}/cam/curated/stats/{entity.entity_id}",
+                    headers=self.headers
                 )
                 
                 if response.status_code == 200:
@@ -532,7 +544,9 @@ class DirectEngramIsolationTester:
 
 async def main():
     """Run the direct Engram API test"""
-    tester = DirectEngramIsolationTester()
+    import os
+    api_secret = os.getenv("API_SECRET_KEY") or "your-secret-key-here"
+    tester = DirectEngramIsolationTester(api_secret=api_secret)
     await tester.run_comprehensive_test()
 
 if __name__ == "__main__":

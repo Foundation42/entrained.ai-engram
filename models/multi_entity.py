@@ -52,6 +52,9 @@ class MultiEntityMetadata(BaseModel):
     situation_context: Optional[str] = None
     entity_roles: Dict[str, str] = {}  # entity_id -> role in situation
     
+    class Config:
+        extra = "allow"  # Allow custom fields like article_id, comment_type, etc.
+    
 
 class MultiEntityMemory(BaseModel):
     """Complete multi-entity memory structure"""

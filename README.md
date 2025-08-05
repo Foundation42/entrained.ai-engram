@@ -4,9 +4,14 @@ A Redis-based semantic memory system for AI agents, enabling storage, retrieval,
 
 ## Features
 
-- **Vector Similarity Search**: Store and retrieve memories based on semantic similarity
+- **Vector Similarity Search**: Store and retrieve memories based on semantic similarity using OpenAI embeddings
 - **Multi-Entity Memory System** 🎉: Revolutionary witness-based access control for shared experiences
+- **Comments-as-Engrams** 🆕: Transform website comments into semantic, searchable memories with intelligent threading
 - **Natural Privacy Boundaries**: Private conversations stay private, group discussions are accessible to participants
+- **Enterprise Security**: API key authentication, rate limiting, XSS protection, and content validation
+- **Agent Participation**: AI agents can naturally participate in comment threads and discussions
+- **Semantic Threading**: Comments connected by meaning, not just chronology
+- **Cross-Article Discovery**: Find related discussions across your entire platform
 - **Multimedia Support**: Handle text, images, websites, and documents
 - **Causality Tracking**: Track relationships between memories and idea evolution
 - **Annotation System**: Add context and relationships to existing memories
@@ -19,7 +24,7 @@ A Redis-based semantic memory system for AI agents, enabling storage, retrieval,
 
 - Docker and Docker Compose
 - Python 3.10+ (for local development)
-- Ollama with `nomic-embed-text:latest` model (for embeddings)
+- OpenAI API key (for embeddings) - **Required for production**
 
 ### Installation
 
@@ -29,10 +34,25 @@ git clone <repository-url>
 cd entrained.ai-engram
 ```
 
-2. Start Ollama (if not running):
+2. Configure environment variables:
 ```bash
-ollama pull nomic-embed-text:latest
-ollama serve
+cp .env.example .env
+# Edit .env to add your OpenAI API key and security settings
+```
+
+Required environment variables:
+```bash
+# OpenAI Embeddings (Required)
+OPENAI_API_KEY=your-openai-api-key-here
+VECTOR_DIMENSIONS=1536
+
+# Security (Required for production)
+ENGRAM_API_SECRET_KEY=your-secure-api-key-here
+ENGRAM_ENABLE_API_AUTH=true
+
+# Optional: Comments-as-Engrams
+ENABLE_COMMENT_ENGRAMS=true
+ENABLE_AGENT_RESPONSES=true
 ```
 
 3. Start entrained.ai-engram with Docker Compose:
@@ -49,6 +69,42 @@ This will start:
 
 Once running, visit http://localhost:8000/docs for interactive API documentation.
 
+## Comments-as-Engrams 🆕
+
+Transform your website comments into intelligent, searchable memories with semantic threading and AI agent participation.
+
+### Quick Example
+
+```bash
+# Store a comment
+curl -X POST "http://localhost:8000/cam/comments/store" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "author_id": "user-123",
+    "article_id": "article-456", 
+    "comment_text": "This article brilliantly explains the future of AI memory systems."
+  }'
+
+# Get semantic thread
+curl -X GET "http://localhost:8000/cam/comments/article/article-456/thread" \
+  -H "X-API-Key: your-api-key"
+
+# Find similar discussions across all articles
+curl -X POST "http://localhost:8000/cam/comments/semantic/similar?comment_text=AI%20memory%20systems&limit=5" \
+  -H "X-API-Key: your-api-key"
+```
+
+### Key Benefits
+
+- **Semantic Threading**: Comments connected by meaning, not just reply chains
+- **Cross-Article Discovery**: Find related discussions across your entire platform  
+- **Agent Participation**: AI agents can contribute naturally to discussions
+- **Editorial Intelligence**: Automatic content curation and quality scoring
+- **Memory Persistence**: Comments become searchable institutional knowledge
+
+📖 **[Read the full Comments-as-Engrams Integration Guide](COMMENTS_AS_ENGRAMS_GUIDE.md)**
+
 ### Example Usage
 
 ```python
@@ -62,7 +118,7 @@ async def store_memory():
             "content": {
                 "text": "Important insight about neural networks..."
             },
-            "primary_vector": [0.1, 0.2, ...],  # 768-dim vector from embedding
+            "primary_vector": [0.1, 0.2, ...],  # 1536-dim vector from OpenAI embedding
             "metadata": {
                 "timestamp": "2025-07-29T14:30:00Z",
                 "agent_id": "claude-001",
@@ -133,7 +189,7 @@ python tests/advanced_test_suite.py
 - **FastAPI**: Modern web framework for building APIs
 - **Redis Stack**: Data storage with vector similarity search using HASH storage for optimal performance
 - **Docker**: Containerized deployment
-- **Ollama**: Local embedding generation (nomic-embed-text model with 768 dimensions)
+- **OpenAI**: Production-grade embedding generation (text-embedding-3-small model with 1536 dimensions)
 
 ## API Endpoints
 
@@ -169,9 +225,46 @@ Environment variables (prefix with `ENGRAM_`):
 
 - `REDIS_HOST` - Redis host (default: localhost)
 - `REDIS_PORT` - Redis port (default: 6379)
-- `VECTOR_DIMENSIONS` - Embedding dimensions (default: 768)
-- `OLLAMA_BASE_URL` - Ollama API URL (default: http://localhost:11434)
+- `VECTOR_DIMENSIONS` - Embedding dimensions (default: 1536 for OpenAI)
+- `OPENAI_API_KEY` - OpenAI API key for embeddings (required)
 - `DEBUG` - Enable debug mode (default: false)
+
+## 🔐 Enterprise Security
+
+Production-ready security features for enterprise deployments:
+
+### Authentication & Authorization
+- **API Key Authentication**: Required for all endpoints in production
+- **Multi-method Support**: X-API-Key header, Authorization Bearer, or query parameter
+- **Constant-time Validation**: Protection against timing attacks
+
+### Rate Limiting & Protection
+- **Per-IP Rate Limiting**: 60 requests/minute, 1000 requests/hour
+- **Automatic IP Blocking**: Temporary blocks for excessive requests
+- **XSS Protection**: Content validation and HTML entity escaping
+- **Input Validation**: Length limits and dangerous pattern detection
+
+### Content Security
+- **Comment Validation**: Length limits, toxicity detection, spam prevention
+- **Content Sanitization**: HTML escaping and dangerous script removal
+- **Moderation Workflows**: Built-in flagging and review systems
+
+### Security Headers
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Strict-Transport-Security` for HTTPS enforcement
+
+### Configuration
+```bash
+# Enable security features
+ENGRAM_ENABLE_API_AUTH=true
+ENGRAM_API_SECRET_KEY=your-production-secret-key
+
+# Rate limiting (optional customization)
+ENGRAM_MAX_REQUESTS_PER_MINUTE=60
+ENGRAM_MAX_REQUESTS_PER_HOUR=1000
+```
 
 ## 🕵️ Built-in Witness Protection 🕵️
 

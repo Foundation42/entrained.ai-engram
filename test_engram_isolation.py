@@ -145,7 +145,7 @@ class EngramIsolationTester:
                                     self.agent_id: agent_response
                                 }
                             },
-                            "primary_vector": [0.1 + (i * 0.001) for i in range(768)],  # Unique vector for testing
+                            "primary_vector": [0.1 + (i * 0.001) for i in range(settings.vector_dimensions)],  # Unique vector for testing
                             "metadata": {
                                 "timestamp": datetime.now().isoformat(),
                                 "interaction_quality": 1.0,
