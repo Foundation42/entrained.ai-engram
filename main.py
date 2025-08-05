@@ -37,16 +37,16 @@ async def lifespan(app: FastAPI):
     # Redis indices are automatically created during connect()
     logger.info("✅ Redis vector indices initialized during connection")
     
-    # Start memory cleanup service
-    cleanup_service.start()
+    # DISABLED: Memory cleanup service inappropriate for persistent comments
+    # cleanup_service.start()
     
     yield
     
     # Shutdown
     logger.info("Shutting down Engram...")
     
-    # Stop cleanup service
-    cleanup_service.stop()
+    # DISABLED: Memory cleanup service 
+    # cleanup_service.stop()
     
     redis_client.close()
     # Note: Add close method to multi-entity client if needed
