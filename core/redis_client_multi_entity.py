@@ -282,7 +282,11 @@ class RedisMultiEntityClient:
             base_query = "(" + " ".join(filter_parts) + ")" if filter_parts else "*"
             knn_query = f"{base_query}=>[KNN {top_k} @embedding $query_vector AS vector_score]"
             
-            logger.info(f"Multi-entity search query: {knn_query}")
+            logger.info(f"🔍 ISOLATION DEBUG - Multi-entity search:")
+            logger.info(f"   Requesting entity: {requesting_entity}")
+            logger.info(f"   Filter parts: {filter_parts}")
+            logger.info(f"   Final query: {knn_query}")
+            logger.info(f"   Top K: {top_k}")
             
             # Convert query vector to binary
             query_buffer = np.array(query_vector, dtype=np.float32).tobytes()
