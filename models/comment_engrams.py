@@ -72,8 +72,8 @@ class CommentAccessControl(BaseModel):
     share_permissions: Dict[str, List[str]] = {"public": ["read"]}
 
 
-class CommentEngramRequest(MultiEntityMemoryCreateRequest):
-    """Extended request for storing comments as Engrams"""
+class CommentEngramRequest(BaseModel):
+    """Simplified request for storing comments as Engrams"""
     # Core comment data
     author_id: str  # The commenting user/agent
     article_id: str
@@ -89,7 +89,7 @@ class CommentEngramRequest(MultiEntityMemoryCreateRequest):
     resonance_score: Optional[float] = None
     topic_tags: List[str] = []
     
-    # Auto-populated fields (override base class)
+    # Situation context
     situation_type: str = "public_discussion"
     
     
