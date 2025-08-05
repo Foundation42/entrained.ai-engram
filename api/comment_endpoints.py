@@ -24,6 +24,7 @@ from models.multi_entity import (
 from core.redis_client_multi_entity import redis_multi_entity_client
 from services.embedding import embedding_service
 from services.memory_curator import memory_curator
+from core.security import content_validator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/comments", tags=["comments"])
@@ -33,6 +34,15 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 async def store_comment(request: CommentEngramRequest, background_tasks: BackgroundTasks):
     """Store a comment as an Engram memory"""
     try:
+        # Validate and sanitize request content
+        request_dict = request.dict()
+        validated_data = content_validator.validate_comment_request(request_dict)
+        
+        # Update request with validated data
+        request.comment_text = validated_data["comment_text"]
+        request.author_id = validated_data["author_id"]
+        request.article_id = validated_data["article_id"]
+        
         logger.info(f"Storing comment from {request.author_id} on article {request.article_id}")
         
         # Build the witnessed_by list
@@ -173,10 +183,24 @@ async def get_article_thread(
             metadata = comment_data.get('metadata', {})
             content = comment_data.get('content', {})
             
+            # Extract author and comment text properly
+            speakers = content.get('speakers', {})
+            if speakers:
+                author_id = list(speakers.keys())[0]
+                comment_text = speakers[author_id]
+            else:
+                author_id = "unknown"
+                # Fallback to extracting from text field (format: "User: comment")
+                text = content.get('text', '')
+                if text.startswith('User: '):
+                    comment_text = text[6:]  # Remove "User: " prefix
+                else:
+                    comment_text = text
+            
             thread_comment = ThreadComment(
                 memory_id=comment_data['memory_id'],
-                author_id=list(content.get('speakers', {}).keys())[0] if content.get('speakers') else "unknown",
-                comment_text=list(content.get('speakers', {}).values())[0] if content.get('speakers') else content.get('text', ''),
+                author_id=author_id,
+                comment_text=comment_text,
                 timestamp=datetime.fromisoformat(metadata.get('timestamp', datetime.utcnow().isoformat())),
                 depth=metadata.get('reply_chain_depth', 0),
                 parent_id=metadata.get('reply_to_comment'),
@@ -285,10 +309,24 @@ async def find_similar_comments(
                 metadata = result.get('metadata', {})
                 content = result.get('content', {})
                 
+                # Extract author and comment text properly
+                speakers = content.get('speakers', {})
+                if speakers:
+                    author_id = list(speakers.keys())[0]
+                    comment_text = speakers[author_id]
+                else:
+                    author_id = "unknown"
+                    # Fallback to extracting from text field (format: "User: comment")
+                    text = content.get('text', '')
+                    if text.startswith('User: '):
+                        comment_text = text[6:]  # Remove "User: " prefix
+                    else:
+                        comment_text = text
+                
                 thread_comment = ThreadComment(
                     memory_id=result['memory_id'],
-                    author_id=list(content.get('speakers', {}).keys())[0] if content.get('speakers') else "unknown",
-                    comment_text=list(content.get('speakers', {}).values())[0] if content.get('speakers') else content.get('text', ''),
+                    author_id=author_id,
+                    comment_text=comment_text,
                     timestamp=datetime.fromisoformat(metadata.get('timestamp', datetime.utcnow().isoformat())),
                     resonance_score=metadata.get('resonance_score', 0.5),
                     topic_tags=metadata.get('topic_tags', [])

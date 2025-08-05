@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     api_prefix: str = "/cam"
     cors_origins: list = ["*"]
     
+    # Security settings
+    api_secret_key: Optional[str] = None  # Required for production
+    enable_api_auth: bool = True  # Set to False for development
+    allowed_origins: list = ["*"]  # Restrict in production
+    
     # Embedding service (Ollama)
     ollama_base_url: str = "http://localhost:11434"
     ollama_embedding_model: str = "nomic-embed-text:latest"

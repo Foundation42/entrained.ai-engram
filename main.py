@@ -1,10 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from core.config import settings
+from core.security import security_middleware, api_key_auth
 from core.redis_client_hash import redis_client
 from core.redis_client_multi_entity import redis_multi_entity_client
 from services.embedding import embedding_service
@@ -65,6 +66,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add security middleware
+app.middleware("http")(security_middleware)
+
 # Include API routes
 app.include_router(router, prefix=settings.api_prefix)
 app.include_router(multi_entity_router, prefix="/cam")
@@ -81,7 +85,22 @@ async def root():
         "version": settings.api_version,
         "status": "running",
         "description": "Content Addressable Memory system for AI agents",
-        "features": ["single-agent", "multi-entity", "witness-based-access", "ai-curation", "intelligent-cleanup", "comment-engrams"]
+        "features": [
+            "single-agent", 
+            "multi-entity", 
+            "witness-based-access", 
+            "ai-curation", 
+            "intelligent-cleanup", 
+            "comment-engrams",
+            "api-key-auth",
+            "rate-limiting",
+            "xss-protection"
+        ],
+        "security": {
+            "authentication": settings.enable_api_auth,
+            "rate_limiting": settings.enable_api_auth,
+            "content_validation": True
+        }
     }
 
 
