@@ -34,6 +34,27 @@ async def lifespan(app: FastAPI):
     redis_client.connect()
     redis_multi_entity_client.connect()
     
+    # Ensure Redis vector indices exist
+    logger.info("Ensuring Redis vector indices exist...")
+    try:
+        # Create hash-based index if missing
+        if not redis_client.vector_index_created:
+            logger.info("Creating hash-based vector index...")
+            redis_client.create_vector_index()
+            
+        # Create multi-entity index if missing
+        try:
+            redis_multi_entity_client.redis_client.ft("engram_vector_idx_multi").info()
+            logger.info("✅ Multi-entity vector index exists")
+        except:
+            logger.info("Creating multi-entity vector index...")
+            redis_multi_entity_client.create_indices()
+            
+        logger.info("✅ All Redis vector indices are ready")
+    except Exception as e:
+        logger.error(f"Failed to create Redis indices: {e}")
+        # Don't fail startup - indices can be recreated later
+    
     # Start memory cleanup service
     cleanup_service.start()
     
