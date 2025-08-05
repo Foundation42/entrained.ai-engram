@@ -210,24 +210,21 @@ async def get_article_thread(
             metadata = comment_data.get('metadata', {})
             content = comment_data.get('content', {})
             
-            # Debug logging for content structure
-            logger.info(f"🔍 DEBUG - Processing comment {comment_data.get('memory_id')}")
-            logger.info(f"🔍 DEBUG - Content keys: {list(content.keys())}")
-            logger.info(f"🔍 DEBUG - Content structure: {content}")
+            # Extract author and comment text from search result format
+            # Search results have 'speakers_involved' and 'content_preview' at top level
+            speakers_involved = comment_data.get('speakers_involved', [])
+            content_preview = comment_data.get('content_preview', '')
             
-            # Extract author and comment text properly
-            speakers = content.get('speakers', {})
-            if speakers:
-                author_id = list(speakers.keys())[0]
-                comment_text = speakers[author_id]
+            if speakers_involved:
+                author_id = speakers_involved[0]  # First speaker is the author
             else:
                 author_id = "unknown"
-                # Fallback to extracting from text field (format: "User: comment")
-                text = content.get('text', '')
-                if text.startswith('User: '):
-                    comment_text = text[6:]  # Remove "User: " prefix
-                else:
-                    comment_text = text
+            
+            # Extract comment text from content_preview (format: "User: actual comment text")
+            if content_preview.startswith('User: '):
+                comment_text = content_preview[6:]  # Remove "User: " prefix
+            else:
+                comment_text = content_preview or ""
             
             thread_comment = ThreadComment(
                 memory_id=comment_data['memory_id'],
