@@ -160,17 +160,25 @@ async def get_article_thread(
         entity_filters = {"witnessed_by_includes": ["public"]}
         situation_filters = {"situation_types": ["public_discussion"]}
         
-        comments_search = redis_multi_entity_client.search_memories(
-            requesting_entity="public",
-            query_vector=[0.1] * 768,  # Use same approach as semantic search
-            top_k=1000,  # Get all comments
-            entity_filters=entity_filters,
-            situation_filters=situation_filters
-        )
-        
-        logger.info(f"Found {len(comments_search)} total memories in search")
-        logger.info(f"Search results type: {type(comments_search)}")
-        logger.info(f"Search results sample: {comments_search[:1] if comments_search else 'EMPTY'}")
+        try:
+            logger.info("Starting memory search for thread reconstruction...")
+            comments_search = redis_multi_entity_client.search_memories(
+                requesting_entity="public",
+                query_vector=[0.1] * 768,  # Use same approach as semantic search
+                top_k=1000,  # Get all comments
+                entity_filters=entity_filters,
+                situation_filters=situation_filters
+            )
+            
+            logger.info(f"Search completed successfully")
+            logger.info(f"Found {len(comments_search)} total memories in search")
+            logger.info(f"Search results type: {type(comments_search)}")
+            logger.info(f"Search results sample: {comments_search[:1] if comments_search else 'EMPTY'}")
+            
+        except Exception as search_error:
+            logger.error(f"Search failed with error: {search_error}")
+            logger.error(f"Error type: {type(search_error)}")
+            comments_search = []
         
         # Filter to only this article's comments using metadata
         article_comments = []
