@@ -184,11 +184,11 @@ class CommentEngramsDemo:
                 response = await client.post(
                     f"{self.engram_url}/cam/comments/semantic/similar",
                     params={
+                        "comment_text": query,
                         "similarity_threshold": 0.6,
                         "limit": 5,
                         "cross_article": False
-                    },
-                    json=query
+                    }
                 )
                 
                 if response.status_code == 200:

@@ -147,7 +147,7 @@ async def get_article_thread(
         logger.info(f"Retrieving comment thread for article {article_id}")
         
         # Search for all comments on this article
-        comments_search = await redis_multi_entity_client.search_memories(
+        comments_search = redis_multi_entity_client.search_memories(
             requesting_entity="public",
             query_vector=[0.0] * 768,  # Dummy vector - we're filtering by metadata
             top_k=1000,  # Get all comments
@@ -270,7 +270,7 @@ async def find_similar_comments(
             situation_filters["contexts"] = [f"Comment thread on {article_id}"]
         
         # Search for similar comments
-        similar_results = await redis_multi_entity_client.search_memories(
+        similar_results = redis_multi_entity_client.search_memories(
             requesting_entity="public",
             query_vector=query_vector,
             top_k=limit * 2,  # Get more to filter later
