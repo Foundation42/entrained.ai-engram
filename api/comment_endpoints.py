@@ -210,6 +210,11 @@ async def get_article_thread(
             metadata = comment_data.get('metadata', {})
             content = comment_data.get('content', {})
             
+            # Debug logging for content structure
+            logger.info(f"🔍 DEBUG - Processing comment {comment_data.get('memory_id')}")
+            logger.info(f"🔍 DEBUG - Content keys: {list(content.keys())}")
+            logger.info(f"🔍 DEBUG - Content structure: {content}")
+            
             # Extract author and comment text properly
             speakers = content.get('speakers', {})
             if speakers:
