@@ -322,6 +322,10 @@ async def handle_store_memory(args: Dict[str, Any]) -> list[TextContent]:
     if not embedding:
         return [TextContent(type="text", text="❌ Failed to generate embedding")]
 
+    # Generate memory ID
+    import uuid
+    memory_id = f"mem-{uuid.uuid4().hex[:12]}"
+
     # Create memory dict
     memory_data = {
         "content": {"text": content, "media": []},
@@ -335,16 +339,16 @@ async def handle_store_memory(args: Dict[str, Any]) -> list[TextContent]:
         "tags": tags
     }
 
-    # Store in Redis
-    from models.memory import Memory
-    memory = Memory(**memory_data)
-    redis_client.store_memory(memory)
+    # Store in Redis using correct API
+    success = redis_client.store_memory(memory_id, memory_data)
+    if not success:
+        return [TextContent(type="text", text="❌ Failed to store memory in Redis")]
 
     return [TextContent(
         type="text",
         text=f"""✅ Memory stored successfully!
 
-**ID:** {memory.id}
+**ID:** {memory_id}
 **Type:** {memory_type}
 **Tags:** {', '.join(tags) if tags else 'none'}
 **Importance:** {importance}
@@ -366,19 +370,18 @@ async def handle_retrieve_memories(args: Dict[str, Any]) -> list[TextContent]:
     if not query_embedding:
         return [TextContent(type="text", text="❌ Failed to generate query embedding")]
 
-    # Search
-    results = redis_client.search_similar_memories(
+    # Build filters for Redis search
+    filters = {}
+    if memory_type != "any":
+        filters["memory_type"] = memory_type
+
+    # Search using correct API
+    results = redis_client.search_memories(
         query_vector=query_embedding,
         top_k=top_k,
-        similarity_threshold=threshold
+        filters=filters,
+        tags=filter_tags if filter_tags else None
     )
-
-    # Apply filters
-    if filter_tags:
-        results = [m for m in results if any(tag in m.get("tags", []) for tag in filter_tags)]
-
-    if memory_type != "any":
-        results = [m for m in results if m.get("metadata", {}).get("memory_type") == memory_type]
 
     if not results:
         return [TextContent(
@@ -391,10 +394,26 @@ async def handle_retrieve_memories(args: Dict[str, Any]) -> list[TextContent]:
 
     for i, mem in enumerate(results[:10], 1):
         mem_id = mem.get("id", "unknown")
-        content = mem.get("content", {}).get("text", "")
-        score = mem.get("similarity_score", 0)
-        mem_type = mem.get("metadata", {}).get("memory_type", "unknown")
+        content_data = mem.get("content", {})
+        if isinstance(content_data, str):
+            import json
+            try:
+                content_data = json.loads(content_data)
+            except:
+                content_data = {"text": content_data}
+        content = content_data.get("text", "")
+        score = mem.get("score", 0)
+        metadata = mem.get("metadata", {})
+        if isinstance(metadata, str):
+            import json
+            try:
+                metadata = json.loads(metadata)
+            except:
+                metadata = {}
+        mem_type = metadata.get("memory_type", "unknown")
         tags = mem.get("tags", [])
+        if isinstance(tags, str):
+            tags = tags.split(",") if tags else []
 
         result_text += f"""**{i}. [{mem_type}] {mem_id}**
    Score: {score:.3f}
@@ -414,12 +433,32 @@ async def handle_get_memory(args: Dict[str, Any]) -> list[TextContent]:
     if not memory:
         return [TextContent(type="text", text=f"❌ Memory not found: {memory_id}")]
 
-    content = memory.get("content", {}).get("text", "")
-    mem_type = memory.get("metadata", {}).get("memory_type", "unknown")
-    agent_id = memory.get("metadata", {}).get("agent_id", "unknown")
-    timestamp = memory.get("metadata", {}).get("timestamp", "unknown")
+    # Handle JSON-encoded fields
+    content_data = memory.get("content", {})
+    if isinstance(content_data, str):
+        import json
+        try:
+            content_data = json.loads(content_data)
+        except:
+            content_data = {"text": content_data}
+    content = content_data.get("text", "")
+
+    metadata = memory.get("metadata", {})
+    if isinstance(metadata, str):
+        import json
+        try:
+            metadata = json.loads(metadata)
+        except:
+            metadata = {}
+
+    mem_type = metadata.get("memory_type", "unknown")
+    agent_id = metadata.get("agent_id", "unknown")
+    timestamp = metadata.get("timestamp", "unknown")
+    importance = metadata.get("importance", "N/A")
+
     tags = memory.get("tags", [])
-    importance = memory.get("metadata", {}).get("importance", "N/A")
+    if isinstance(tags, str):
+        tags = tags.split(",") if tags else []
 
     result_text = f"""📄 Memory: {memory_id}
 
@@ -440,12 +479,13 @@ async def handle_list_recent(args: Dict[str, Any]) -> list[TextContent]:
     """List recent memories"""
     limit = args.get("limit", 10)
 
-    # Broad search to get recent items
+    # Broad search to get recent items using correct API
     dummy_vector = [0.5] * 1536
-    results = redis_client.search_similar_memories(
+    results = redis_client.search_memories(
         query_vector=dummy_vector,
         top_k=limit,
-        similarity_threshold=0.0
+        filters=None,
+        tags=None
     )
 
     if not results:
@@ -455,8 +495,22 @@ async def handle_list_recent(args: Dict[str, Any]) -> list[TextContent]:
 
     for i, mem in enumerate(results, 1):
         mem_id = mem.get("id", "unknown")
-        content = mem.get("content", {}).get("text", "")
-        mem_type = mem.get("metadata", {}).get("memory_type", "unknown")
+        content_data = mem.get("content", {})
+        if isinstance(content_data, str):
+            import json
+            try:
+                content_data = json.loads(content_data)
+            except:
+                content_data = {"text": content_data}
+        content = content_data.get("text", "")
+        metadata = mem.get("metadata", {})
+        if isinstance(metadata, str):
+            import json
+            try:
+                metadata = json.loads(metadata)
+            except:
+                metadata = {}
+        mem_type = metadata.get("memory_type", "unknown")
 
         result_text += f"{i}. [{mem_type}] {mem_id}\n   {content[:80]}{'...' if len(content) > 80 else ''}\n\n"
 
