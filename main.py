@@ -10,10 +10,11 @@ from core.redis_client_hash import redis_client
 from core.redis_client_multi_entity import redis_multi_entity_client
 from services.embedding import embedding_service
 from api.endpoints import router
-from api.multi_entity_endpoints import router as multi_entity_router  
+from api.multi_entity_endpoints import router as multi_entity_router
 from api.admin_endpoints import router as admin_router
 from api.curated_memory_endpoints import router as curated_router
 from api.comment_endpoints import router as comment_router
+from api.mcp_endpoints import router as mcp_router
 from services.memory_cleanup import cleanup_service
 
 # Configure logging
@@ -78,6 +79,7 @@ app.include_router(multi_entity_router, prefix="/cam")
 app.include_router(curated_router, prefix="/cam")  # Curated memory endpoints
 app.include_router(comment_router, prefix="/cam")  # Comment-as-Engrams endpoints
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(mcp_router, prefix="/mcp")  # MCP protocol endpoints
 
 
 @app.get("/")
@@ -89,15 +91,16 @@ async def root():
         "status": "running",
         "description": "Content Addressable Memory system for AI agents",
         "features": [
-            "single-agent", 
-            "multi-entity", 
-            "witness-based-access", 
-            "ai-curation", 
-            "intelligent-cleanup", 
+            "single-agent",
+            "multi-entity",
+            "witness-based-access",
+            "ai-curation",
+            "intelligent-cleanup",
             "comment-engrams",
             "api-key-auth",
             "rate-limiting",
-            "xss-protection"
+            "xss-protection",
+            "mcp-protocol"
         ],
         "security": {
             "authentication": settings.enable_api_auth,
