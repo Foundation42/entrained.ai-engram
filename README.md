@@ -237,42 +237,92 @@ engram/
 - **MCP Server**: Model Context Protocol support for seamless AI tool integration
 - **Pytest**: Comprehensive unit and integration tests
 
-## 🔌 MCP Server Integration
+## 🔌 MCP Server Integration (Remote & Local)
 
-Engram now supports the Model Context Protocol (MCP), allowing direct integration with Claude Desktop and other AI tools.
+Engram supports the **Model Context Protocol (MCP)** for seamless integration with Claude Code, Claude Desktop, and other AI tools.
 
-### Starting the MCP Server
+### 🌐 Remote MCP Server (Recommended)
 
+Connect to Engram's production MCP server over HTTPS - **no local setup required!**
+
+**For Claude Code:**
 ```bash
-# Install MCP dependencies
-pip install -r requirements.txt
-
-# Start the MCP server
-python mcp_server.py
+claude mcp add --transport http engram https://engram-fi-1.entrained.ai:8443/mcp/ \
+  --header "X-API-Key: your-api-key-here"
 ```
 
-### Available MCP Tools
+**For Claude Desktop:**
 
-- `store_memory` - Store new memories with semantic embeddings
-- `retrieve_memories` - Retrieve similar memories by query
-- `get_memory` - Get a specific memory by ID
-- `search_by_tags` - Search memories by tags
-- `get_stats` - Get memory system statistics
-
-### Claude Desktop Configuration
-
-Add to your Claude Desktop config:
-
+Add to `~/.claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "engram": {
-      "command": "python",
-      "args": ["/path/to/engram/mcp_server.py"],
+      "type": "http",
+      "url": "https://engram-fi-1.entrained.ai:8443/mcp/",
+      "headers": {
+        "X-API-Key": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+### 💾 Available MCP Tools (6 Total)
+
+| Tool | Purpose | Key Features |
+|------|---------|-------------|
+| **store_memory** | Save information | 7 memory types, importance scoring, rich tags |
+| **retrieve_memories** | Semantic search | Tag/type filtering, similarity threshold |
+| **get_memory** | Fetch by ID | Full memory details with metadata |
+| **list_recent_memories** | Timeline view | Recent memories first |
+| **get_memory_stats** | System status | Health check, feature list |
+| **memory** | Unified interface | Auto-detects store vs retrieve |
+
+### 📖 Complete Documentation
+
+- **[MCP Integration Guide](MCP_INTEGRATION_GUIDE.md)** - Complete usage examples, API details, troubleshooting
+- **[Test Suite](tests/test_mcp_endpoints.py)** - 15 comprehensive tests validating all tools
+
+### 🚀 Quick Example
+
+**Store a memory:**
+```bash
+# Via Claude Code - just ask!
+"Remember that Christian prefers concise answers without preamble"
+```
+
+**Retrieve memories:**
+```bash
+# Via Claude Code - just ask!
+"What do you know about my communication preferences?"
+```
+
+### 🧪 Test Your Connection
+
+```bash
+pytest tests/test_mcp_endpoints.py -v
+```
+
+### 🖥️ Local MCP Server (Development)
+
+For local development or custom deployments:
+
+```bash
+# Start local MCP server
+python mcp_server_enhanced.py
+```
+
+Add to Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "engram-local": {
+      "command": "python3",
+      "args": ["/path/to/engram/mcp_server_enhanced.py"],
       "env": {
-        "ENGRAM_REDIS_HOST": "localhost",
-        "ENGRAM_REDIS_PORT": "6379",
-        "OPENAI_API_KEY": "your-api-key"
+        "ENGRAM_API_URL": "http://localhost:8000",
+        "ENGRAM_API_KEY": "your-api-key"
       }
     }
   }
@@ -293,6 +343,10 @@ Add to your Claude Desktop config:
 - `POST /cam/multi/retrieve` - Retrieve memories with entity-based access control
 - `GET /cam/multi/memory/{memory_id}` - Get memory with witness verification
 - `GET /cam/multi/situations/{entity_id}` - Get entity's situation history
+
+### MCP Protocol Endpoints (🔌 Model Context Protocol)
+- `GET /mcp/` - SSE stream for server-to-client messages
+- `POST /mcp/` - JSON-RPC endpoint for tool calls (initialize, tools/list, tools/call)
 
 ### System Endpoints
 - `GET /health` - Health check with Redis and vector index status
