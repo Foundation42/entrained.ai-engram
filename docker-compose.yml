@@ -5,17 +5,18 @@ services:
     image: redis/redis-stack:7.4.0-v2
     container_name: entrained-ai-engram-redis
     ports:
-      - "6379:6379"
-      - "8002:8001"  # RedisInsight web UI
+      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:8002:8001"
     volumes:
       - redis_data:/data
     environment:
       - REDIS_APPENDONLY=yes
       - REDIS_MAXMEMORY=512mb
       - REDIS_MAXMEMORY_POLICY=allkeys-lru
+      - REDIS_ARGS=--requirepass 4udJkRvYqnaEeT4yeU3PgZbT5lftfb8rjvSM+Ec9kqE=
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "4udJkRvYqnaEeT4yeU3PgZbT5lftfb8rjvSM+Ec9kqE=", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -26,13 +27,23 @@ services:
     build: .
     container_name: entrained-ai-engram-api
     ports:
-      - "8000:8000"
+      - "8443:8000"
+    env_file:
+      - .env
     environment:
       - ENGRAM_REDIS_HOST=redis
       - ENGRAM_REDIS_PORT=6379
+      - ENGRAM_REDIS_PASSWORD=4udJkRvYqnaEeT4yeU3PgZbT5lftfb8rjvSM+Ec9kqE=
       - ENGRAM_OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - ENGRAM_DEBUG=true
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./cert.pem:/app/cert.pem:ro
+      - ./key.pem:/app/key.pem:ro
+      - ./api:/app/api:ro
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+      - ./models:/app/models:ro
+      - ./main.py:/app/main.py:ro
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--ssl-keyfile", "/app/key.pem", "--ssl-certfile", "/app/cert.pem", "--reload"]
     depends_on:
       redis:
         condition: service_healthy
