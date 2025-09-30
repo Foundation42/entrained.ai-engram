@@ -175,13 +175,57 @@ python main.py
 ### Running Tests
 
 ```bash
-# Start services
-docker-compose up -d
+# Install test dependencies
+pip install -r requirements.txt
 
-# Run test suite
-python tests/test_example.py
-python tests/comprehensive_test.py
-python tests/advanced_test_suite.py
+# Run all tests with pytest
+pytest
+
+# Run specific test categories
+pytest -m unit              # Unit tests only
+pytest -m integration       # Integration tests only
+
+# Run tests with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test file
+pytest tests/unit/test_config.py
+```
+
+## Project Structure
+
+```
+engram/
+├── api/                    # API endpoint definitions
+│   ├── endpoints.py        # Main memory endpoints
+│   ├── multi_entity_endpoints.py
+│   ├── comment_endpoints.py
+│   └── admin_endpoints.py
+├── core/                   # Core system components
+│   ├── config.py          # Configuration management
+│   ├── security.py        # Authentication & rate limiting
+│   ├── redis_client_hash.py
+│   └── redis_client_multi_entity.py
+├── models/                 # Data models (Pydantic)
+│   ├── memory.py          # Memory models
+│   ├── retrieval.py       # Retrieval models
+│   └── multi_entity.py
+├── services/               # Business logic services
+│   ├── embedding.py       # OpenAI embedding service
+│   ├── memory_curator.py
+│   └── memory_cleanup.py
+├── tests/                  # Test suite
+│   ├── unit/              # Unit tests for components
+│   ├── integration/       # Integration tests
+│   └── fixtures/          # Test data fixtures
+├── scripts/                # Utility scripts
+│   ├── debug/             # Debug scripts
+│   ├── utils/             # Utility scripts
+│   └── migration/         # Migration scripts
+├── docs/                   # Documentation
+├── main.py                 # HTTP API server
+├── mcp_server.py          # MCP server for AI tools
+└── pytest.ini             # Test configuration
 ```
 
 ## Architecture
@@ -190,6 +234,50 @@ python tests/advanced_test_suite.py
 - **Redis Stack**: Data storage with vector similarity search using HASH storage for optimal performance
 - **Docker**: Containerized deployment
 - **OpenAI**: Production-grade embedding generation (text-embedding-3-small model with 1536 dimensions)
+- **MCP Server**: Model Context Protocol support for seamless AI tool integration
+- **Pytest**: Comprehensive unit and integration tests
+
+## 🔌 MCP Server Integration
+
+Engram now supports the Model Context Protocol (MCP), allowing direct integration with Claude Desktop and other AI tools.
+
+### Starting the MCP Server
+
+```bash
+# Install MCP dependencies
+pip install -r requirements.txt
+
+# Start the MCP server
+python mcp_server.py
+```
+
+### Available MCP Tools
+
+- `store_memory` - Store new memories with semantic embeddings
+- `retrieve_memories` - Retrieve similar memories by query
+- `get_memory` - Get a specific memory by ID
+- `search_by_tags` - Search memories by tags
+- `get_stats` - Get memory system statistics
+
+### Claude Desktop Configuration
+
+Add to your Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "engram": {
+      "command": "python",
+      "args": ["/path/to/engram/mcp_server.py"],
+      "env": {
+        "ENGRAM_REDIS_HOST": "localhost",
+        "ENGRAM_REDIS_PORT": "6379",
+        "OPENAI_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
 
 ## API Endpoints
 

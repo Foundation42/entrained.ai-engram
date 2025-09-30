@@ -94,16 +94,15 @@ redis_data/
 
 # Test outputs
 test_output/
-*.test.json
-embedding_output.json
+.pytest_cache/
 
 # Temporary files
 *.tmp
 *.temp
-debug_*.py
-check_*.py
-# Keep organized test files in tests/ directory
-!/tests/*.py
+
+# Keep scripts in organized directories
+scripts/debug/*.py
+scripts/utils/*.py
 
 # Project specific
 referencecode/
