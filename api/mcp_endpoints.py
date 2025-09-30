@@ -393,31 +393,17 @@ async def handle_retrieve_memories(args: Dict[str, Any]) -> list[TextContent]:
     result_text = f"🔍 Found {len(results)} relevant memories for '{query}':\n\n"
 
     for i, mem in enumerate(results[:10], 1):
-        mem_id = mem.get("id", "unknown")
-        content_data = mem.get("content", {})
-        if isinstance(content_data, str):
-            import json
-            try:
-                content_data = json.loads(content_data)
-            except:
-                content_data = {"text": content_data}
-        content = content_data.get("text", "")
-        score = mem.get("score", 0)
+        # Redis client returns: memory_id, similarity_score, content_preview, metadata, tags
+        mem_id = mem.get("memory_id", "unknown")
+        score = mem.get("similarity_score", 0.0)
+        content_preview = mem.get("content_preview", "")
         metadata = mem.get("metadata", {})
-        if isinstance(metadata, str):
-            import json
-            try:
-                metadata = json.loads(metadata)
-            except:
-                metadata = {}
         mem_type = metadata.get("memory_type", "unknown")
         tags = mem.get("tags", [])
-        if isinstance(tags, str):
-            tags = tags.split(",") if tags else []
 
         result_text += f"""**{i}. [{mem_type}] {mem_id}**
    Score: {score:.3f}
-   {content[:150]}{'...' if len(content) > 150 else ''}
+   {content_preview}
    Tags: {', '.join(tags) if tags else 'none'}
 
 """
@@ -494,25 +480,18 @@ async def handle_list_recent(args: Dict[str, Any]) -> list[TextContent]:
     result_text = f"📋 Your {len(results)} most recent memories:\n\n"
 
     for i, mem in enumerate(results, 1):
-        mem_id = mem.get("id", "unknown")
-        content_data = mem.get("content", {})
-        if isinstance(content_data, str):
-            import json
-            try:
-                content_data = json.loads(content_data)
-            except:
-                content_data = {"text": content_data}
-        content = content_data.get("text", "")
+        # Redis client returns: memory_id, content_preview, metadata, tags
+        mem_id = mem.get("memory_id", "unknown")
+        content_preview = mem.get("content_preview", "")
         metadata = mem.get("metadata", {})
-        if isinstance(metadata, str):
-            import json
-            try:
-                metadata = json.loads(metadata)
-            except:
-                metadata = {}
         mem_type = metadata.get("memory_type", "unknown")
 
-        result_text += f"{i}. [{mem_type}] {mem_id}\n   {content[:80]}{'...' if len(content) > 80 else ''}\n\n"
+        # Truncate preview to 80 chars for list view
+        short_preview = content_preview[:80]
+        if len(content_preview) > 80:
+            short_preview += "..."
+
+        result_text += f"{i}. [{mem_type}] {mem_id}\n   {short_preview}\n\n"
 
     return [TextContent(type="text", text=result_text)]
 
