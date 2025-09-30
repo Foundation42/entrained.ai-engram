@@ -541,90 +541,107 @@ Or be more explicit: "Remember that..." or "What do I know about..." """
 
 
 # ============================================================================
-# SSE ENDPOINT
+# STREAMABLE HTTP ENDPOINT (MCP 2025-03-26 Specification)
 # ============================================================================
 
-@router.get("/sse", dependencies=[Depends(api_key_auth)])
-async def mcp_sse_endpoint(request: Request):
+@router.api_route("/", methods=["GET", "POST"], dependencies=[Depends(api_key_auth)])
+async def mcp_endpoint(request: Request):
     """
-    MCP Server-Sent Events endpoint for remote MCP clients
+    MCP Streamable HTTP endpoint (MCP specification 2025-03-26)
 
-    This endpoint provides MCP protocol support over SSE, allowing
-    remote clients like Claude Code to connect and use Engram memory tools.
+    Single endpoint supporting both POST (JSON-RPC requests) and GET (SSE stream).
+    This is the modern MCP remote server protocol.
 
-    Connect with: claude mcp add sse engram https://engram-fi-1.entrained.ai:8443/mcp/sse --header "X-API-Key: YOUR_KEY"
+    Connect with: claude mcp add https://engram-fi-1.entrained.ai:8443/mcp --header "X-API-Key: YOUR_KEY"
     """
 
-    async def event_generator():
-        """Generate SSE events for MCP protocol"""
-        try:
-            # Send initial connection message
-            yield {
-                "event": "message",
-                "data": json.dumps({
-                    "type": "connection",
-                    "status": "connected",
-                    "server": "engram-memory-remote",
-                    "version": "1.0.0",
-                    "tools": len(await list_tools())
-                })
-            }
+    if request.method == "GET":
+        # SSE stream for server-to-client messages
+        async def event_generator():
+            """Generate SSE events for MCP protocol"""
+            try:
+                logger.info("MCP SSE stream opened")
 
-            # Keep connection alive and handle incoming requests
-            while True:
-                # In a real implementation, this would handle bidirectional communication
-                # For now, we'll use the FastAPI/MCP integration
-
-                # Check if client disconnected
-                if await request.is_disconnected():
-                    logger.info("MCP SSE client disconnected")
-                    break
-
-                # Heartbeat
+                # Keep connection alive with heartbeats
                 import asyncio
-                await asyncio.sleep(30)
-                yield {
-                    "event": "ping",
-                    "data": json.dumps({"type": "heartbeat", "timestamp": datetime.utcnow().isoformat()})
+                while True:
+                    if await request.is_disconnected():
+                        logger.info("MCP SSE client disconnected")
+                        break
+
+                    await asyncio.sleep(30)
+                    yield {
+                        "event": "ping",
+                        "data": ""
+                    }
+
+            except Exception as e:
+                logger.error(f"Error in MCP SSE stream: {e}")
+
+        return EventSourceResponse(event_generator())
+
+    else:  # POST
+        # JSON-RPC message handling
+        try:
+            payload = await request.json()
+
+            # Handle JSON-RPC protocol
+            jsonrpc_version = payload.get("jsonrpc")
+            if jsonrpc_version != "2.0":
+                return {
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32600, "message": "Invalid Request: jsonrpc must be 2.0"},
+                    "id": None
                 }
 
-        except Exception as e:
-            logger.error(f"Error in MCP SSE stream: {e}")
-            yield {
-                "event": "error",
-                "data": json.dumps({"type": "error", "message": str(e)})
+            method = payload.get("method")
+            params = payload.get("params", {})
+            request_id = payload.get("id")
+
+            logger.info(f"MCP request: {method}")
+
+            # Handle different MCP methods
+            if method == "initialize":
+                result = {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {}
+                    },
+                    "serverInfo": {
+                        "name": "engram-memory",
+                        "version": "1.0.0"
+                    }
+                }
+
+            elif method == "tools/list":
+                tools = await list_tools()
+                result = {"tools": [tool.model_dump() for tool in tools]}
+
+            elif method == "tools/call":
+                tool_name = params.get("name")
+                tool_args = params.get("arguments", {})
+                tool_result = await call_tool(tool_name, tool_args)
+                result = {"content": [c.model_dump() for c in tool_result]}
+
+            else:
+                return {
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32601, "message": f"Method not found: {method}"},
+                    "id": request_id
+                }
+
+            return {"jsonrpc": "2.0", "result": result, "id": request_id}
+
+        except json.JSONDecodeError:
+            return {
+                "jsonrpc": "2.0",
+                "error": {"code": -32700, "message": "Parse error: Invalid JSON"},
+                "id": None
             }
-
-    return EventSourceResponse(event_generator())
-
-
-@router.post("/rpc", dependencies=[Depends(api_key_auth)])
-async def mcp_rpc_endpoint(request: Request):
-    """
-    MCP JSON-RPC endpoint for tool calls
-
-    This endpoint handles tool invocations from MCP clients.
-    """
-    try:
-        payload = await request.json()
-
-        method = payload.get("method")
-        params = payload.get("params", {})
-        request_id = payload.get("id")
-
-        if method == "tools/list":
-            tools = await list_tools()
-            result = {"tools": [tool.model_dump() for tool in tools]}
-        elif method == "tools/call":
-            tool_name = params.get("name")
-            tool_args = params.get("arguments", {})
-            result = await call_tool(tool_name, tool_args)
-            result = {"content": [c.model_dump() for c in result]}
-        else:
-            return {"jsonrpc": "2.0", "error": {"code": -32601, "message": f"Method not found: {method}"}, "id": request_id}
-
-        return {"jsonrpc": "2.0", "result": result, "id": request_id}
-
-    except Exception as e:
-        logger.error(f"Error in MCP RPC endpoint: {e}")
-        return {"jsonrpc": "2.0", "error": {"code": -32603, "message": str(e)}, "id": request_id}
+        except Exception as e:
+            logger.error(f"Error in MCP endpoint: {e}")
+            return {
+                "jsonrpc": "2.0",
+                "error": {"code": -32603, "message": f"Internal error: {str(e)}"},
+                "id": request_id if 'request_id' in locals() else None
+            }
